@@ -403,7 +403,7 @@ export default function VerificationPage() {
             {/* Guild icon with animated border (if available) */}
             {guildIcon && (
               <div className="flex justify-center mb-8">
-                <div className="relative flex items-center justify-center" style={{ width: 122, height: 122 }}>
+                <div className="relative flex items-center justify-center" style={{ width: 120, height: 120 }}>
                   {/* Animated border ring with dynamic color */}
                   <div className={`absolute inset-0 rounded-full bg-gradient-to-r ${getGuildIconBorder()} p-3 transition-all duration-700`}> 
                     <div className="w-full h-full rounded-full bg-white/95 dark:bg-gray-900/95"></div>
