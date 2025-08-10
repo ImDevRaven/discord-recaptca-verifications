@@ -2,7 +2,11 @@ import { type NextRequest, NextResponse } from "next/server"
 
 export async function POST(request: NextRequest) {
   try {
-    const { id, captcha, guild, guild_name, guild_icon } = await request.json()
+    // Extract all possible fields from the request body
+    const {
+      id, captcha, guild, guild_name, guild_icon,
+      ip, city, region, country, org, loc, timezone, browser, browserVersion, device
+    } = await request.json()
 
     console.log("Verification request received:", {
       id: id ? "present" : "missing",
@@ -221,6 +225,10 @@ export async function POST(request: NextRequest) {
       hostname: recaptchaData.hostname,
       message: "Verification completed successfully",
       guild_name: guild_name,
+      // Echo back client info for confirmation
+      clientInfo: {
+        ip, city, region, country, org, loc, timezone, browser, browserVersion, device
+      }
     })
   } catch (error) {
     console.error("Verification error:", error)
