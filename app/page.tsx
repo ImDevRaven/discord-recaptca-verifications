@@ -239,10 +239,17 @@ export default function VerificationPage() {
 
           if (result.success && result.score > 0.5) {
             setState("success")
-            // Auto-redirect after 3 seconds
+            // Auto-close window after 3 seconds
             setTimeout(() => {
               if (isComponentMounted) {
-                window.location.href = "https://discord.com"
+                // Try to close the window/tab
+                try {
+                  window.close()
+                } catch (error) {
+                  console.log("Cannot close window automatically - user needs to close manually")
+                  // Fallback: show a message to close manually
+                  setCurrentMessage("Please close this tab to return to Discord.")
+                }
               }
             }, 3000)
           } else {
@@ -383,9 +390,14 @@ export default function VerificationPage() {
               </p>
 
               {state === "success" && (
-                <p className="text-sm text-green-600 dark:text-green-400 mt-2 animate-fade-in">
-                  You can now return to Discord.
-                </p>
+                <div className="text-center mt-2 animate-fade-in">
+                  <p className="text-sm text-green-600 dark:text-green-400 mb-2">
+                    Verification complete! This window will close automatically.
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    If the window doesn't close, you can close it manually.
+                  </p>
+                </div>
               )}
 
               {state === "error" && (
