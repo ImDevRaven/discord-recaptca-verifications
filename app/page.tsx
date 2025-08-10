@@ -402,14 +402,14 @@ export default function VerificationPage() {
           <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-2xl hover:shadow-3xl transition-shadow duration-300 p-8 border border-white/20">
             {/* Guild icon with animated border (if available) */}
             {guildIcon && (
-              <div className="flex justify-center mb-6">
-                <div className="relative">
+              <div className="flex justify-center mb-8">
+                <div className="relative" style={{ width: 96, height: 96 }}>
                   {/* Animated border ring with dynamic color */}
-                  <div className={`absolute inset-0 rounded-full bg-gradient-to-r ${getGuildIconBorder()} p-0.5 transition-all duration-700`}>
+                  <div className={`absolute inset-0 rounded-full bg-gradient-to-r ${getGuildIconBorder()} p-1.5 transition-all duration-700`}>
                     <div className="w-full h-full rounded-full bg-white/95 dark:bg-gray-900/95"></div>
                   </div>
                   {/* Guild icon container */}
-                  <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-transparent shadow-lg">
+                  <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-transparent shadow-lg">
                     <img
                       src={guildIcon || "/placeholder.svg"}
                       alt={`${guildName} icon`}
