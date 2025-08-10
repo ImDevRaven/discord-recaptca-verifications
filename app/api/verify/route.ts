@@ -1,5 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { AbortSignal } from "abort-controller"
 
 export async function POST(request: NextRequest) {
   try {
@@ -113,25 +112,32 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Send verification to your Express server
+    // Send verification to your Express server with manual timeout
     try {
       console.log(`Sending verification to Express server for user ID: ${id}`)
 
-      const expressResponse = await fetch("http://node.waifly.com:27482/verified", {
+      // Create a timeout promise
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Request timeout")), 10000) // 10 second timeout
+      })
+
+      // Create the fetch promise
+      const fetchPromise = fetch("http://node.waifly.com:27482/verified", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "User-Agent": "Vercel-Verification-Service/1.0",
         },
         body: JSON.stringify({ id }),
-        // Add timeout to prevent hanging
-        signal: AbortSignal.timeout(10000), // 10 second timeout
       })
+
+      // Race between fetch and timeout
+      const expressResponse = await Promise.race([fetchPromise, timeoutPromise])
 
       if (!expressResponse.ok) {
         const errorText = await expressResponse.text()
         console.error(`Express server returned ${expressResponse.status}: ${errorText}`)
-        throw new Error(`Express server error: ${expressResponse.status}`)
+        throw new Error(`Express server error: ${expressResponse.status} - ${errorText}`)
       }
 
       const expressResult = await expressResponse.json()
@@ -144,10 +150,25 @@ export async function POST(request: NextRequest) {
       console.log(`Successfully verified user ${id} with Express server`)
     } catch (expressError) {
       console.error("Failed to notify Express server:", expressError)
+
+      // Provide more specific error messages
+      let errorMessage = "Failed to complete verification with Discord server"
+      if (expressError instanceof Error) {
+        if (expressError.message.includes("timeout") || expressError.message.includes("Request timeout")) {
+          errorMessage = "Discord server is taking too long to respond. Please try again."
+        } else if (expressError.message.includes("ECONNREFUSED") || expressError.message.includes("fetch failed")) {
+          errorMessage = "Cannot connect to Discord server. Please try again later."
+        } else if (expressError.message.includes("500")) {
+          errorMessage = "Discord server encountered an error. Please try again."
+        } else if (expressError.message.includes("400")) {
+          errorMessage = "Invalid verification request. Please try again."
+        }
+      }
+
       return NextResponse.json(
         {
           success: false,
-          error: "Failed to complete verification with Discord server",
+          error: errorMessage,
           details: expressError instanceof Error ? expressError.message : "Unknown error",
         },
         { status: 500 },
@@ -171,10 +192,13 @@ export async function POST(request: NextRequest) {
           ],
         }
 
-        await fetch(process.env.DISCORD_WEBHOOK_URL, {
+        // Don't await this to avoid blocking the response
+        fetch(process.env.DISCORD_WEBHOOK_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(webhookPayload),
+        }).catch((webhookError) => {
+          console.error("Discord webhook error:", webhookError)
         })
       } catch (webhookError) {
         console.error("Discord webhook error:", webhookError)
