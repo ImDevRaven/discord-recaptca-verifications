@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { CheckCircle, AlertTriangle, Bot, Hash, RefreshCw } from "lucide-react"
+import { CheckCircle, AlertTriangle, Bot, Hash, RefreshCw, X } from "lucide-react"
 
 declare global {
   interface Window {
@@ -16,7 +16,7 @@ const statusMessages = {
   loading: "Contacting verification server…",
   analyzing: "Analyzing activity…",
   validating: "Validating session…",
-  success: "Verified! You may proceed.",
+  success: "Verified! Role assigned successfully.",
   error: "Verification failed. Please try again.",
 }
 
@@ -237,9 +237,9 @@ export default function VerificationPage() {
         setTimeout(() => {
           if (!isComponentMounted) return
 
-          if (result.success && result.score > 0.5) {
+          if (result.success) {
             setState("success")
-            // Auto-close window after 3 seconds
+            // Auto-close window after 5 seconds (longer to show success message)
             setTimeout(() => {
               if (isComponentMounted) {
                 // Try to close the window/tab
@@ -247,13 +247,13 @@ export default function VerificationPage() {
                   window.close()
                 } catch (error) {
                   console.log("Cannot close window automatically - user needs to close manually")
-                  // Fallback: show a message to close manually
+                  // Update message to show manual close instruction
                   setCurrentMessage("Please close this tab to return to Discord.")
                 }
               }
-            }, 3000)
+            }, 5000)
           } else {
-            setErrorDetails(result.error || `Low verification score: ${result.score}`)
+            setErrorDetails(result.error || result.details || "Verification failed")
             setState("error")
           }
         }, 5000)
@@ -308,6 +308,14 @@ export default function VerificationPage() {
     // Remove existing scripts
     const existingScripts = document.querySelectorAll('script[src*="recaptcha"]')
     existingScripts.forEach((script) => script.remove())
+  }
+
+  const handleManualClose = () => {
+    try {
+      window.close()
+    } catch (error) {
+      console.log("Cannot close window programmatically")
+    }
   }
 
   // Show loading state while fetching config
@@ -390,20 +398,31 @@ export default function VerificationPage() {
               </p>
 
               {state === "success" && (
-                <div className="text-center mt-2 animate-fade-in">
-                  <p className="text-sm text-green-600 dark:text-green-400 mb-2">
-                    Verification complete! This window will close automatically.
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    If the window doesn't close, you can close it manually.
-                  </p>
+                <div className="text-center mt-4 animate-fade-in">
+                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-4">
+                    <p className="text-sm text-green-700 dark:text-green-300 font-medium mb-2">
+                      ✅ Verification Complete!
+                    </p>
+                    <p className="text-xs text-green-600 dark:text-green-400">
+                      Your Discord role has been assigned successfully.
+                      <br />
+                      This window will close automatically in 5 seconds.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleManualClose}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors duration-200 text-sm font-medium"
+                  >
+                    <X className="w-4 h-4" />
+                    Close Now
+                  </button>
                 </div>
               )}
 
               {state === "error" && (
                 <div className="mt-4">
                   {errorDetails && (
-                    <p className="text-sm text-red-600 dark:text-red-400 mb-3 bg-red-50 dark:bg-red-900/20 p-2 rounded">
+                    <p className="text-sm text-red-600 dark:text-red-400 mb-3 bg-red-50 dark:bg-red-900/20 p-3 rounded border border-red-200 dark:border-red-800">
                       {errorDetails}
                     </p>
                   )}

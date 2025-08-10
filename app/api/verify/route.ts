@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { AbortSignal } from "abort-controller"
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,6 +13,11 @@ export async function POST(request: NextRequest) {
     if (!captcha) {
       console.error("No captcha token provided")
       return NextResponse.json({ success: false, error: "No captcha token provided" }, { status: 400 })
+    }
+
+    if (!id) {
+      console.error("No user ID provided")
+      return NextResponse.json({ success: false, error: "No user ID provided" }, { status: 400 })
     }
 
     if (!process.env.RECAPTCHA_SECRET_KEY) {
@@ -95,16 +101,72 @@ export async function POST(request: NextRequest) {
 
     console.log(`reCAPTCHA score: ${score}, threshold: ${threshold}`)
 
-    // Optional: Send verification data to Discord webhook
-    if (process.env.DISCORD_WEBHOOK_URL && id) {
+    if (score < threshold) {
+      console.log(`Score ${score} below threshold ${threshold}`)
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Verification score too low",
+          score: score,
+        },
+        { status: 400 },
+      )
+    }
+
+    // Send verification to your Express server
+    try {
+      console.log(`Sending verification to Express server for user ID: ${id}`)
+
+      const expressResponse = await fetch("http://node.waifly.com:27482/verified", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent": "Vercel-Verification-Service/1.0",
+        },
+        body: JSON.stringify({ id }),
+        // Add timeout to prevent hanging
+        signal: AbortSignal.timeout(10000), // 10 second timeout
+      })
+
+      if (!expressResponse.ok) {
+        const errorText = await expressResponse.text()
+        console.error(`Express server returned ${expressResponse.status}: ${errorText}`)
+        throw new Error(`Express server error: ${expressResponse.status}`)
+      }
+
+      const expressResult = await expressResponse.json()
+      console.log("Express server response:", expressResult)
+
+      if (!expressResult.success) {
+        throw new Error(expressResult.message || "Express server rejected verification")
+      }
+
+      console.log(`Successfully verified user ${id} with Express server`)
+    } catch (expressError) {
+      console.error("Failed to notify Express server:", expressError)
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Failed to complete verification with Discord server",
+          details: expressError instanceof Error ? expressError.message : "Unknown error",
+        },
+        { status: 500 },
+      )
+    }
+
+    // Optional: Send verification data to Discord webhook (if you still want this)
+    if (process.env.DISCORD_WEBHOOK_URL) {
       try {
         const webhookPayload = {
           embeds: [
             {
-              title: score >= threshold ? "✅ User Verified" : "⚠️ Low Score Verification",
+              title: "✅ User Verified via Vercel",
               description: `User ID: ${id}\nreCAPTCHA Score: ${score}\nAction: ${recaptchaData.action || "verify_user"}`,
-              color: score >= threshold ? 0x00ff00 : 0xffaa00,
+              color: 0x00ff00,
               timestamp: new Date().toISOString(),
+              footer: {
+                text: "Verification completed successfully",
+              },
             },
           ],
         }
@@ -116,6 +178,7 @@ export async function POST(request: NextRequest) {
         })
       } catch (webhookError) {
         console.error("Discord webhook error:", webhookError)
+        // Don't fail the verification if webhook fails
       }
     }
 
@@ -124,6 +187,7 @@ export async function POST(request: NextRequest) {
       score: score,
       action: recaptchaData.action,
       hostname: recaptchaData.hostname,
+      message: "Verification completed successfully",
     })
   } catch (error) {
     console.error("Verification error:", error)
@@ -131,6 +195,7 @@ export async function POST(request: NextRequest) {
       {
         success: false,
         error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 },
     )
