@@ -13,10 +13,10 @@ declare global {
 type VerificationState = "loading" | "analyzing" | "validating" | "success" | "error"
 
 const statusMessages = {
-  loading: "Contacting verification server…",
+  loading: "Loading…",
   analyzing: "Analyzing activity…",
-  validating: "Validating session…",
-  success: "Verified! Role assigned successfully.",
+  validating: "Verifying…",
+  success: "Verified Successfully!.",
   error: "Verification failed. Please try again.",
 }
 
