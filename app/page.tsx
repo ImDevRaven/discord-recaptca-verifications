@@ -29,6 +29,7 @@ export default function VerificationPage() {
   const [configLoaded, setConfigLoaded] = useState(false)
   const [errorDetails, setErrorDetails] = useState<string>("")
   const [retryCount, setRetryCount] = useState(0)
+  const [countdown, setCountdown] = useState(5)
   const searchParams = useSearchParams()
   const userId = searchParams.get("id")
 
@@ -40,6 +41,24 @@ export default function VerificationPage() {
     const timer = setTimeout(() => setIsVisible(true), 100)
     return () => clearTimeout(timer)
   }, [])
+
+  // Countdown timer for success state
+  useEffect(() => {
+    if (state === "success" && countdown > 0) {
+      const timer = setTimeout(() => {
+        setCountdown(countdown - 1)
+      }, 1000)
+      return () => clearTimeout(timer)
+    } else if (state === "success" && countdown === 0) {
+      // Auto-close when countdown reaches 0
+      try {
+        window.close()
+      } catch (error) {
+        console.log("Cannot close window automatically - user needs to close manually")
+        setCurrentMessage("Please close this tab to return to Discord.")
+      }
+    }
+  }, [state, countdown])
 
   // Fetch reCAPTCHA configuration
   useEffect(() => {
@@ -239,19 +258,7 @@ export default function VerificationPage() {
 
           if (result.success) {
             setState("success")
-            // Auto-close window after 5 seconds (longer to show success message)
-            setTimeout(() => {
-              if (isComponentMounted) {
-                // Try to close the window/tab
-                try {
-                  window.close()
-                } catch (error) {
-                  console.log("Cannot close window automatically - user needs to close manually")
-                  // Update message to show manual close instruction
-                  setCurrentMessage("Please close this tab to return to Discord.")
-                }
-              }
-            }, 5000)
+            setCountdown(5) // Reset countdown when success state is reached
           } else {
             setErrorDetails(result.error || result.details || "Verification failed")
             setState("error")
@@ -399,16 +406,9 @@ export default function VerificationPage() {
 
               {state === "success" && (
                 <div className="text-center mt-4 animate-fade-in">
-                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-4">
-                    <p className="text-sm text-green-700 dark:text-green-300 font-medium mb-2">
-                      ✅ Verification Complete!
-                    </p>
-                    <p className="text-xs text-green-600 dark:text-green-400">
-                      Your Discord role has been assigned successfully.
-                      <br />
-                      This window will close automatically in 5 seconds.
-                    </p>
-                  </div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                    This window will close automatically in {countdown} second{countdown !== 1 ? "s" : ""}.
+                  </p>
                   <button
                     onClick={handleManualClose}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors duration-200 text-sm font-medium"
