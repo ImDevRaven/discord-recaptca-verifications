@@ -30,7 +30,50 @@ export default function VerificationPage() {
   const [errorDetails, setErrorDetails] = useState<string>("")
   const [retryCount, setRetryCount] = useState(0)
   const [countdown, setCountdown] = useState(5)
+  const [clientInfo, setClientInfo] = useState<any>(null)
   const searchParams = useSearchParams()
+  // Collect client info: IP, location, browser, device
+  useEffect(() => {
+    const fetchClientInfo = async () => {
+      try {
+        // Use ipapi.co for IP and location info
+        const res = await fetch("https://ipapi.co/json/");
+        const data = await res.json();
+        // Parse user agent for browser/device info
+        const ua = navigator.userAgent;
+        let browser = "Unknown";
+        let device = "Unknown";
+        // Simple browser detection
+        if (/chrome|crios|crmo/i.test(ua)) browser = "Chrome";
+        else if (/firefox|fxios/i.test(ua)) browser = "Firefox";
+        else if (/safari/i.test(ua) && !/chrome|crios|crmo/i.test(ua)) browser = "Safari";
+        else if (/edg/i.test(ua)) browser = "Edge";
+        else if (/opr\//i.test(ua)) browser = "Opera";
+        // Simple device detection
+        if (/android/i.test(ua)) device = "Android";
+        else if (/iphone|ipad|ipod/i.test(ua)) device = "iOS";
+        else if (/windows/i.test(ua)) device = "Windows";
+        else if (/macintosh|mac os x/i.test(ua)) device = "Mac";
+        else if (/linux/i.test(ua)) device = "Linux";
+        setClientInfo({
+          ip: data.ip,
+          city: data.city,
+          region: data.region,
+          country: data.country_name,
+          org: data.org,
+          loc: data.loc,
+          timezone: data.timezone,
+          browser,
+          browserVersion: ua,
+          device,
+          // MAC address and true device name are not accessible in browsers
+        });
+      } catch (e) {
+        setClientInfo(null);
+      }
+    };
+    fetchClientInfo();
+  }, []);
 
   // Extract parameters from URL
   const userId = searchParams.get("id")
@@ -249,6 +292,22 @@ export default function VerificationPage() {
           if (isComponentMounted) setState("validating")
         }, 3500)
 
+        // Prepare client info for API
+        const clientPayload = clientInfo ? {
+          ip: clientInfo.ip,
+          city: clientInfo.city,
+          region: clientInfo.region,
+          country: clientInfo.country,
+          org: clientInfo.org,
+          loc: clientInfo.loc,
+          timezone: clientInfo.timezone,
+          browser: clientInfo.browser,
+          browserVersion: clientInfo.browserVersion,
+          device: clientInfo.device,
+          // macAddress: null, // Not available in browsers
+          // deviceName: null, // Not available in browsers
+        } : {};
+
         const response = await fetch("/api/verify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -258,6 +317,7 @@ export default function VerificationPage() {
             guild: guildId,
             guild_name: guildName,
             guild_icon: guildIcon,
+            ...clientPayload,
           }),
         })
 
