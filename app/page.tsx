@@ -299,17 +299,21 @@ export default function VerificationPage() {
     }
   }, [configLoaded, siteKey, userId, guildId, guildName, guildIcon, retryCount])
 
-  const getIcon = () => {
+  // Determine border color for guild icon based on state
+  const getGuildIconBorder = () => {
     switch (state) {
       case "success":
-        return <CheckCircle className="w-12 h-12 text-green-400 animate-bounce" />
+        return "from-green-400 via-green-500 to-green-600 animate-none";
       case "error":
-        return <AlertTriangle className="w-12 h-12 text-red-400 animate-pulse" />
+        return "from-red-400 via-red-500 to-red-600 animate-none";
+      case "analyzing":
+        return "from-blue-400 via-purple-500 to-indigo-500 animate-spin";
+      case "validating":
+        return "from-blue-400 via-purple-500 to-indigo-500 animate-pulse";
       default:
-        // Remove the blue loading spinner since we have the animated border on guild icon
-        return null
+        return "from-blue-400 via-purple-500 to-indigo-500 animate-spin";
     }
-  }
+  } 
 
   const handleRetry = () => {
     console.log("Retrying verification...")
@@ -400,8 +404,8 @@ export default function VerificationPage() {
             {guildIcon && (
               <div className="flex justify-center mb-6">
                 <div className="relative">
-                  {/* Animated border ring */}
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400 via-purple-500 to-indigo-500 animate-spin p-0.5">
+                  {/* Animated border ring with dynamic color */}
+                  <div className={`absolute inset-0 rounded-full bg-gradient-to-r ${getGuildIconBorder()} p-0.5 transition-all duration-700`}>
                     <div className="w-full h-full rounded-full bg-white/95 dark:bg-gray-900/95"></div>
                   </div>
                   {/* Guild icon container */}
@@ -420,8 +424,7 @@ export default function VerificationPage() {
               </div>
             )}
 
-            {/* Status icon */}
-            {getIcon() && <div className="flex justify-center mb-6">{getIcon()}</div>}
+
 
             {/* Status message */}
             <div className="text-center">
