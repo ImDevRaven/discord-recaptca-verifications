@@ -2,11 +2,13 @@ import { type NextRequest, NextResponse } from "next/server"
 
 export async function POST(request: NextRequest) {
   try {
-    const { id, captcha } = await request.json()
+    const { id, captcha, guild, guild_name, guild_icon } = await request.json()
 
     console.log("Verification request received:", {
       id: id ? "present" : "missing",
       captcha: captcha ? "present" : "missing",
+      guild: guild ? "present" : "missing",
+      guild_name: guild_name || "not provided",
     })
 
     if (!captcha) {
@@ -114,21 +116,26 @@ export async function POST(request: NextRequest) {
 
     // Send verification to your Express server with manual timeout
     try {
-      console.log(`Sending verification to Express server for user ID: ${id}`)
+      console.log(`Sending verification to Express server for user ID: ${id} in guild: ${guild_name || guild}`)
 
       // Create a timeout promise
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error("Request timeout")), 10000) // 10 second timeout
       })
 
-      // Create the fetch promise
+      // Create the fetch promise - send all guild information to Express server
       const fetchPromise = fetch("http://node.waifly.com:27482/verified", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "User-Agent": "Vercel-Verification-Service/1.0",
         },
-        body: JSON.stringify({ id }),
+        body: JSON.stringify({
+          id,
+          guild,
+          guild_name,
+          guild_icon,
+        }),
       })
 
       // Race between fetch and timeout
@@ -147,7 +154,7 @@ export async function POST(request: NextRequest) {
         throw new Error(expressResult.message || "Express server rejected verification")
       }
 
-      console.log(`Successfully verified user ${id} with Express server`)
+      console.log(`Successfully verified user ${id} with Express server for guild ${guild_name || guild}`)
     } catch (expressError) {
       console.error("Failed to notify Express server:", expressError)
 
@@ -182,12 +189,13 @@ export async function POST(request: NextRequest) {
           embeds: [
             {
               title: "✅ User Verified via Vercel",
-              description: `User ID: ${id}\nreCAPTCHA Score: ${score}\nAction: ${recaptchaData.action || "verify_user"}`,
+              description: `User ID: ${id}\nGuild: ${guild_name || guild}\nreCAPTCHA Score: ${score}\nAction: ${recaptchaData.action || "verify_user"}`,
               color: 0x00ff00,
               timestamp: new Date().toISOString(),
               footer: {
                 text: "Verification completed successfully",
               },
+              thumbnail: guild_icon ? { url: guild_icon } : undefined,
             },
           ],
         }
@@ -212,6 +220,7 @@ export async function POST(request: NextRequest) {
       action: recaptchaData.action,
       hostname: recaptchaData.hostname,
       message: "Verification completed successfully",
+      guild_name: guild_name,
     })
   } catch (error) {
     console.error("Verification error:", error)

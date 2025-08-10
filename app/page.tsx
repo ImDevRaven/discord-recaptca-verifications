@@ -31,7 +31,12 @@ export default function VerificationPage() {
   const [retryCount, setRetryCount] = useState(0)
   const [countdown, setCountdown] = useState(5)
   const searchParams = useSearchParams()
+
+  // Extract parameters from URL
   const userId = searchParams.get("id")
+  const guildId = searchParams.get("guild")
+  const guildName = searchParams.get("guild_name")
+  const guildIcon = searchParams.get("guild_icon")
 
   // Development mode check
   const isDevelopment = process.env.NODE_ENV === "development"
@@ -247,7 +252,13 @@ export default function VerificationPage() {
         const response = await fetch("/api/verify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: userId, captcha: token }),
+          body: JSON.stringify({
+            id: userId,
+            captcha: token,
+            guild: guildId,
+            guild_name: guildName,
+            guild_icon: guildIcon,
+          }),
         })
 
         const result = await response.json()
@@ -286,7 +297,7 @@ export default function VerificationPage() {
       isComponentMounted = false
       clearTimeout(timer)
     }
-  }, [configLoaded, siteKey, userId, retryCount])
+  }, [configLoaded, siteKey, userId, guildId, guildName, guildIcon, retryCount])
 
   const getIcon = () => {
     switch (state) {
@@ -325,6 +336,14 @@ export default function VerificationPage() {
     }
   }
 
+  // Get the display title
+  const getTitle = () => {
+    if (guildName) {
+      return `${guildName} Verification`
+    }
+    return "Discord Verification"
+  }
+
   // Show loading state while fetching config
   if (!configLoaded) {
     return (
@@ -337,7 +356,7 @@ export default function VerificationPage() {
                 <div className="w-12 h-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin" />
               </div>
               <div className="text-center">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Discord Verification</h1>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{getTitle()}</h1>
                 <p className="text-lg text-gray-600 dark:text-gray-300">Initializing verification system…</p>
               </div>
             </div>
@@ -376,12 +395,29 @@ export default function VerificationPage() {
           }`}
         >
           <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-2xl hover:shadow-3xl transition-shadow duration-300 p-8 border border-white/20">
+            {/* Guild icon (if available) */}
+            {guildIcon && (
+              <div className="flex justify-center mb-6">
+                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/20 shadow-lg">
+                  <img
+                    src={guildIcon || "/placeholder.svg"}
+                    alt={`${guildName} icon`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Hide the image container if the icon fails to load
+                      e.currentTarget.parentElement?.classList.add("hidden")
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Status icon */}
             <div className="flex justify-center mb-6">{getIcon()}</div>
 
             {/* Status message */}
             <div className="text-center">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Discord Verification</h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{getTitle()}</h1>
               <p
                 className={`text-lg text-gray-600 dark:text-gray-300 min-h-[1.75rem] transition-all duration-300 ${
                   state === "validating" ? "animate-pulse" : ""
