@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { CheckCircle, AlertTriangle, Bot, Hash, RefreshCw, X } from "lucide-react"
+import { CheckCircle, AlertTriangle, RefreshCw, X } from "lucide-react"
 
 declare global {
   interface Window {
@@ -16,7 +16,7 @@ const statusMessages = {
   loading: "Loading…",
   analyzing: "Analyzing activity…",
   validating: "Verifying…",
-  success: "Verified Successfully!.",
+  success: "Verified Successfully!",
   error: "Verification failed. Please try again.",
 }
 
@@ -376,17 +376,6 @@ export default function VerificationPage() {
           }`}
         >
           <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-2xl hover:shadow-3xl transition-shadow duration-300 p-8 border border-white/20">
-            {/* Discord icons */}
-            <div className="flex items-center justify-center gap-4 mb-8">
-              <div className="p-3 bg-indigo-100 dark:bg-indigo-900/50 rounded-full">
-                <Bot className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
-              </div>
-              <div className="w-px h-8 bg-gray-300 dark:bg-gray-600" />
-              <div className="p-3 bg-purple-100 dark:bg-purple-900/50 rounded-full">
-                <Hash className="w-8 h-8 text-purple-600 dark:text-purple-400" />
-              </div>
-            </div>
-
             {/* Status icon */}
             <div className="flex justify-center mb-6">{getIcon()}</div>
 
