@@ -306,7 +306,8 @@ export default function VerificationPage() {
       case "error":
         return <AlertTriangle className="w-12 h-12 text-red-400 animate-pulse" />
       default:
-        return <div className="w-12 h-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin" />
+        // Remove the blue loading spinner since we have the animated border on guild icon
+        return null
     }
   }
 
@@ -395,25 +396,32 @@ export default function VerificationPage() {
           }`}
         >
           <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-2xl hover:shadow-3xl transition-shadow duration-300 p-8 border border-white/20">
-            {/* Guild icon (if available) */}
+            {/* Guild icon with animated border (if available) */}
             {guildIcon && (
               <div className="flex justify-center mb-6">
-                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/20 shadow-lg">
-                  <img
-                    src={guildIcon || "/placeholder.svg"}
-                    alt={`${guildName} icon`}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      // Hide the image container if the icon fails to load
-                      e.currentTarget.parentElement?.classList.add("hidden")
-                    }}
-                  />
+                <div className="relative">
+                  {/* Animated border ring */}
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400 via-purple-500 to-indigo-500 animate-spin p-0.5">
+                    <div className="w-full h-full rounded-full bg-white/95 dark:bg-gray-900/95"></div>
+                  </div>
+                  {/* Guild icon container */}
+                  <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-transparent shadow-lg">
+                    <img
+                      src={guildIcon || "/placeholder.svg"}
+                      alt={`${guildName} icon`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Hide the image container if the icon fails to load
+                        e.currentTarget.parentElement?.parentElement?.classList.add("hidden")
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
             )}
 
             {/* Status icon */}
-            <div className="flex justify-center mb-6">{getIcon()}</div>
+            {getIcon() && <div className="flex justify-center mb-6">{getIcon()}</div>}
 
             {/* Status message */}
             <div className="text-center">
