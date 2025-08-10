@@ -139,6 +139,17 @@ export async function POST(request: NextRequest) {
           guild,
           guild_name,
           guild_icon,
+          // Pass client info fields to Express server for DB storage
+          ip,
+          city,
+          region,
+          country,
+          org,
+          loc,
+          timezone,
+          browser,
+          browserVersion,
+          device
         }),
       })
 
