@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: 'Verification',
   description: 'DevNest Verification System',
   developer: 'dev.raven',
+    generator: 'v0.dev'
 }
 
 export default function RootLayout({
