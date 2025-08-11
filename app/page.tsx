@@ -254,7 +254,7 @@ export default function VerificationPage() {
           headers: { "Content-Type": "application/json" },
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${process.env.DISCORD_API_KEY || ""}`,
+              "Authorization": `Bearer ${process.env.NEXT_PUBLIC_DISCORD_API_KEY || ""}`,
             },
             body: JSON.stringify({
             id: userId,
