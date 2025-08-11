@@ -1,6 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server"
 
 export async function POST(request: NextRequest) {
+  // Authorization check
+  const authHeader = request.headers.get("authorization") || ""
+  const expectedToken = process.env.DISCORD_API_KEY
+  if (!expectedToken) {
+    console.error("DISCORD_API_KEY not set in environment")
+    return NextResponse.json({ success: false, error: "Server configuration error" }, { status: 500 })
+  }
+  if (!authHeader.startsWith("Bearer ") || authHeader.slice(7) !== expectedToken) {
+    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+  }
   try {
     const { id, captcha, guild, guild_name, guild_icon } = await request.json()
 
