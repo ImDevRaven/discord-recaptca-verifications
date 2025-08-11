@@ -139,6 +139,7 @@ export async function POST(request: NextRequest) {
         headers: {
           "Content-Type": "application/json",
           "User-Agent": "Vercel-Verification-Service/1.0",
+          "Authorization": `Bearer ${process.env.DISCORD_API_KEY}`,
         },
         body: JSON.stringify({
           id,
