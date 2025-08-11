@@ -252,7 +252,11 @@ export default function VerificationPage() {
         const response = await fetch("/api/verify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${process.env.DISCORD_API_KEY || ""}`,
+            },
+            body: JSON.stringify({
             id: userId,
             captcha: token,
             guild: guildId,
