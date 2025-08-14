@@ -339,17 +339,17 @@ export default function VerificationPage() {
   // Show loading state while fetching config
   if (!configLoaded) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="p-8">
-            <div className="flex justify-center mb-6">
-              <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent animate-spin" />
-            </div>
-            <div className="text-center">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">{getTitle()}</h1>
-              <p className="text-gray-600">Initializing verification system…</p>
-            </div>
-          </div>
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div
+            className="w-12 h-12 rounded-full animate-spin mx-auto mb-4 bg-gradient-to-r from-yellow-400 via-yellow-500 to-white border-4 border-transparent bg-clip-padding"
+            style={{
+              background: "conic-gradient(from 0deg, #fbbf24, #f59e0b, #ffffff, #fbbf24)",
+              WebkitMask: "radial-gradient(farthest-side, transparent calc(100% - 4px), black calc(100% - 4px))",
+              mask: "radial-gradient(farthest-side, transparent calc(100% - 4px), black calc(100% - 4px))",
+            }}
+          />
+          <p className="text-gray-600 dark:text-gray-300">Loading...</p>
         </div>
       </div>
     )
@@ -395,7 +395,7 @@ export default function VerificationPage() {
 
               {/* Back arrow */}
               <button className="mb-6 p-2 rounded-full hover:bg-gray-100 transition-colors">
-                <ChevronLeft className="w-5 h-5" />
+                
               </button>
 
               {/* Main heading */}
