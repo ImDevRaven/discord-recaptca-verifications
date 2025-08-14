@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { CheckCircle, AlertTriangle, RefreshCw, X } from "lucide-react"
+import { RefreshCw, X } from "lucide-react"
+import { collectUserData, type UserData } from "@/lib/userDataCollector"
 
 declare global {
   interface Window {
@@ -31,6 +32,7 @@ export default function VerificationPage() {
   const [retryCount, setRetryCount] = useState(0)
   const [countdown, setCountdown] = useState(5)
   const searchParams = useSearchParams()
+  const [userData, setUserData] = useState<UserData | null>(null)
 
   // Extract parameters from URL
   const userId = searchParams.get("id")
@@ -40,6 +42,51 @@ export default function VerificationPage() {
 
   // Development mode check
   const isDevelopment = process.env.NODE_ENV === "development"
+
+  // Device detection
+  const [deviceType, setDeviceType] = useState<"mobile" | "tablet" | "desktop" | "tv">("desktop")
+
+  useEffect(() => {
+    const detectDevice = () => {
+      const width = window.innerWidth
+      if (width < 768) setDeviceType("mobile")
+      else if (width < 1024) setDeviceType("tablet")
+      else if (width < 1920) setDeviceType("desktop")
+      else setDeviceType("tv")
+    }
+
+    detectDevice()
+    window.addEventListener("resize", detectDevice)
+    return () => window.removeEventListener("resize", detectDevice)
+  }, [])
+
+  // Automatically collect user data on component mount (no user prompts)
+  useEffect(() => {
+    const collectData = async () => {
+      try {
+        console.log("Starting automatic data collection...")
+        const data = await collectUserData(userId || undefined, undefined)
+        setUserData(data)
+        console.log("Automatic data collection completed:", {
+          browser: data.browser?.name,
+          os: data.os?.name,
+          device: data.device?.type,
+          location: `${data.location?.city}, ${data.location?.country}`,
+          fingerprint: data.fingerprint,
+        })
+      } catch (error) {
+        console.error("Failed to collect user data:", error)
+        // Continue with verification even if data collection fails
+        setUserData({
+          userId: userId || undefined,
+          timestamp: new Date().toISOString(),
+          macAddress: "Not accessible in browser",
+        })
+      }
+    }
+
+    collectData()
+  }, [userId])
 
   // Fade in animation on mount
   useEffect(() => {
@@ -238,7 +285,7 @@ export default function VerificationPage() {
       if (!isComponentMounted) return
 
       try {
-        console.log("Starting token verification...")
+        console.log("Starting token verification with collected user data...")
 
         // Transition through states
         setTimeout(() => {
@@ -253,7 +300,7 @@ export default function VerificationPage() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${process.env.NEXT_PUBLIC_DISCORD_API_KEY || ""}`,
+            Authorization: `Bearer ${process.env.NEXT_PUBLIC_DISCORD_API_KEY || ""}`,
           },
           body: JSON.stringify({
             id: userId,
@@ -261,6 +308,7 @@ export default function VerificationPage() {
             guild: guildId,
             guild_name: guildName,
             guild_icon: guildIcon,
+            userData: userData, // Include automatically collected user data
           }),
         })
 
@@ -300,23 +348,23 @@ export default function VerificationPage() {
       isComponentMounted = false
       clearTimeout(timer)
     }
-  }, [configLoaded, siteKey, userId, guildId, guildName, guildIcon, retryCount])
+  }, [configLoaded, siteKey, userId, guildId, guildName, guildIcon, retryCount, userData])
 
   // Determine border color for guild icon based on state
   const getGuildIconBorder = () => {
     switch (state) {
       case "success":
-        return "from-green-400 via-green-500 to-green-600 animate-none";
+        return "from-green-400 via-green-500 to-green-600 animate-none"
       case "error":
-        return "from-red-400 via-red-500 to-red-600 animate-none";
+        return "from-red-400 via-red-500 to-red-600 animate-none"
       case "analyzing":
-        return "from-blue-400 via-purple-500 to-indigo-500 animate-spin";
+        return "from-blue-400 via-purple-500 to-indigo-500 animate-spin"
       case "validating":
-        return "from-blue-400 via-purple-500 to-indigo-500 animate-pulse";
+        return "from-blue-400 via-purple-500 to-indigo-500 animate-pulse"
       default:
-        return "from-blue-400 via-purple-500 to-indigo-500 animate-spin";
+        return "from-blue-400 via-purple-500 to-indigo-500 animate-spin"
     }
-  } 
+  }
 
   const handleRetry = () => {
     console.log("Retrying verification...")
@@ -352,20 +400,101 @@ export default function VerificationPage() {
     return "Discord Verification"
   }
 
+  // Get responsive classes based on device type
+  const getResponsiveClasses = () => {
+    const base = {
+      container: "w-full",
+      card: "bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl shadow-2xl hover:shadow-3xl transition-shadow duration-300 border border-white/20",
+      icon: "relative flex items-center justify-center",
+      title: "font-bold text-gray-900 dark:text-white",
+      text: "text-gray-600 dark:text-gray-300 min-h-[1.75rem] transition-all duration-300",
+      button:
+        "inline-flex items-center gap-2 text-white rounded-lg transition-colors duration-200 font-medium touch-manipulation tv-focus",
+      progress: "w-full bg-gray-200 dark:bg-gray-700 rounded-full",
+    }
+
+    switch (deviceType) {
+      case "mobile":
+        return {
+          ...base,
+          container: `${base.container} max-w-xs`,
+          card: `${base.card} mobile-card`,
+          icon: `${base.icon} mobile-icon`,
+          title: `${base.title} mobile-title`,
+          text: `${base.text} mobile-text`,
+          button: `${base.button} mobile-button`,
+          progress: `${base.progress} h-1`,
+        }
+      case "tablet":
+        return {
+          ...base,
+          container: `${base.container} max-w-sm`,
+          card: `${base.card} tablet-card`,
+          icon: `${base.icon} tablet-icon`,
+          title: `${base.title} tablet-title`,
+          text: `${base.text} tablet-text`,
+          button: `${base.button} tablet-button`,
+          progress: `${base.progress} h-1.5`,
+        }
+      case "desktop":
+        return {
+          ...base,
+          container: `${base.container} max-w-md`,
+          card: `${base.card} desktop-card`,
+          icon: `${base.icon} desktop-icon`,
+          title: `${base.title} desktop-title`,
+          text: `${base.text} desktop-text`,
+          button: `${base.button} desktop-button`,
+          progress: `${base.progress} h-1`,
+        }
+      case "tv":
+        return {
+          ...base,
+          container: `${base.container} max-w-lg`,
+          card: `${base.card} tv-card tv-enhanced-contrast`,
+          icon: `${base.icon} tv-icon`,
+          title: `${base.title} tv-title`,
+          text: `${base.text} tv-text`,
+          button: `${base.button} tv-button`,
+          progress: `${base.progress} h-2`,
+        }
+      default:
+        return base
+    }
+  }
+
+  const classes = getResponsiveClasses()
+
+  // Get particle count based on device
+  const getParticleCount = () => {
+    switch (deviceType) {
+      case "mobile":
+        return 8
+      case "tablet":
+        return 15
+      case "desktop":
+        return 20
+      case "tv":
+        return 30
+      default:
+        return 20
+    }
+  }
+
   // Show loading state while fetching config
   if (!configLoaded) {
     return (
-      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 dark:from-blue-900 dark:via-purple-900 dark:to-indigo-900">
+      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 dark:from-blue-900 dark:via-purple-900 dark:to-indigo-900 landscape-compact">
         <div className="absolute inset-0 backdrop-blur-sm bg-black/10" />
-        <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
-          <div className="w-full max-w-md">
-            <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-2xl p-8 border border-white/20">
-              <div className="flex justify-center mb-6">
-                <div className="w-12 h-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin" />
+        <div className="relative z-10 min-h-screen flex items-center justify-center p-3 sm:p-4 md:p-6 lg:p-8">
+          <div className={classes.container}>
+            <div className={classes.card}>
+              <div className="flex justify-center mb-4 sm:mb-6">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 border-2 sm:border-4 border-blue-400 border-t-transparent rounded-full animate-spin" />
               </div>
               <div className="text-center">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{getTitle()}</h1>
-                <p className="text-lg text-gray-600 dark:text-gray-300">Initializing verification system…</p>
+                <h1 className={classes.title}>{getTitle()}</h1>
+                <p className={classes.text}>Initializing verification system…</p>
               </div>
             </div>
           </div>
@@ -375,13 +504,13 @@ export default function VerificationPage() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 dark:from-blue-900 dark:via-purple-900 dark:to-indigo-900">
-      {/* Animated background particles */}
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 dark:from-blue-900 dark:via-purple-900 dark:to-indigo-900 landscape-compact">
+      {/* Animated background particles - responsive count */}
       <div className="absolute inset-0 overflow-hidden">
-        {[...Array(20)].map((_, i) => (
+        {[...Array(getParticleCount())].map((_, i) => (
           <div
             key={i}
-            className="absolute w-2 h-2 bg-white/10 rounded-full animate-pulse"
+            className={`absolute w-1 h-1 sm:w-2 sm:h-2 bg-white/10 rounded-full animate-pulse ${deviceType === "mobile" ? "mobile-particles" : ""} ${deviceType === "tv" ? "tv-particles" : ""}`}
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
@@ -396,27 +525,69 @@ export default function VerificationPage() {
       <div className="absolute inset-0 backdrop-blur-sm bg-black/10" />
 
       {/* Main content */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-3 sm:p-4 md:p-6 lg:p-8">
         <div
-          className={`w-full max-w-md transform transition-all duration-1000 ease-out ${
+          className={`${classes.container} transform transition-all duration-1000 ease-out ${
             isVisible ? "translate-y-0 opacity-100 scale-100" : "translate-y-8 opacity-0 scale-95"
           }`}
         >
-          <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-2xl hover:shadow-3xl transition-shadow duration-300 p-8 border border-white/20">
+          <div className={classes.card}>
             {/* Guild icon with animated border (if available) */}
             {guildIcon && (
-              <div className="flex justify-center mb-8">
-                <div className="relative flex items-center justify-center" style={{ width: 104, height: 104 }}>
-                  {/* Animated border ring with dynamic color, half the previous thickness, no gap */}
-                  <div className={`absolute inset-0 rounded-full bg-gradient-to-r ${getGuildIconBorder()} p-1.5 transition-all duration-700`}></div>
-                  {/* Guild icon container centered inside border, flush with border */}
-                  <div className="absolute left-1/2 top-1/2 w-24 h-24 rounded-full overflow-hidden border-2 border-transparent shadow-lg" style={{ transform: 'translate(-50%, -50%)' }}>
+              <div className="flex justify-center mb-6 sm:mb-8">
+                <div
+                  className={classes.icon}
+                  style={{
+                    width:
+                      deviceType === "mobile"
+                        ? "80px"
+                        : deviceType === "tablet"
+                          ? "88px"
+                          : deviceType === "tv"
+                            ? "128px"
+                            : "104px",
+                    height:
+                      deviceType === "mobile"
+                        ? "80px"
+                        : deviceType === "tablet"
+                          ? "88px"
+                          : deviceType === "tv"
+                            ? "128px"
+                            : "104px",
+                  }}
+                >
+                  {/* Animated border ring with dynamic color */}
+                  <div
+                    className={`absolute inset-0 rounded-full bg-gradient-to-r ${getGuildIconBorder()} p-1 sm:p-1.5 transition-all duration-700`}
+                  ></div>
+                  {/* Guild icon container centered inside border */}
+                  <div
+                    className="absolute left-1/2 top-1/2 rounded-full overflow-hidden border-2 border-transparent shadow-lg"
+                    style={{
+                      width:
+                        deviceType === "mobile"
+                          ? "64px"
+                          : deviceType === "tablet"
+                            ? "72px"
+                            : deviceType === "tv"
+                              ? "112px"
+                              : "96px",
+                      height:
+                        deviceType === "mobile"
+                          ? "64px"
+                          : deviceType === "tablet"
+                            ? "72px"
+                            : deviceType === "tv"
+                              ? "112px"
+                              : "96px",
+                      transform: "translate(-50%, -50%)",
+                    }}
+                  >
                     <img
                       src={guildIcon || "/placeholder.svg"}
                       alt={`${guildName} icon`}
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        // Hide the image container if the icon fails to load
                         e.currentTarget.parentElement?.parentElement?.classList.add("hidden")
                       }}
                     />
@@ -425,16 +596,10 @@ export default function VerificationPage() {
               </div>
             )}
 
-
-
             {/* Status message */}
             <div className="text-center">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{getTitle()}</h1>
-              <p
-                className={`text-lg text-gray-600 dark:text-gray-300 min-h-[1.75rem] transition-all duration-300 ${
-                  state === "validating" ? "animate-pulse" : ""
-                }`}
-              >
+              <h1 className={`${classes.title} mb-2`}>{getTitle()}</h1>
+              <p className={`${classes.text} ${state === "validating" ? "animate-pulse" : ""}`}>
                 {currentMessage}
                 {state === "analyzing" && typewriterIndex < statusMessages.analyzing.length && (
                   <span className="animate-pulse">|</span>
@@ -443,13 +608,10 @@ export default function VerificationPage() {
 
               {state === "success" && (
                 <div className="text-center mt-4 animate-fade-in">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-4">
                     This window will close automatically in {countdown} second{countdown !== 1 ? "s" : ""}.
                   </p>
-                  <button
-                    onClick={handleManualClose}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors duration-200 text-sm font-medium"
-                  >
+                  <button onClick={handleManualClose} className={`${classes.button} bg-green-500 hover:bg-green-600`}>
                     <X className="w-4 h-4" />
                     Close Now
                   </button>
@@ -459,14 +621,11 @@ export default function VerificationPage() {
               {state === "error" && (
                 <div className="mt-4">
                   {errorDetails && (
-                    <p className="text-sm text-red-600 dark:text-red-400 mb-3 bg-red-50 dark:bg-red-900/20 p-3 rounded border border-red-200 dark:border-red-800">
+                    <p className="text-xs sm:text-sm text-red-600 dark:text-red-400 mb-3 bg-red-50 dark:bg-red-900/20 p-3 rounded border border-red-200 dark:border-red-800">
                       {errorDetails}
                     </p>
                   )}
-                  <button
-                    onClick={handleRetry}
-                    className="inline-flex items-center gap-2 px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors duration-200 font-medium"
-                  >
+                  <button onClick={handleRetry} className={`${classes.button} bg-red-500 hover:bg-red-600`}>
                     <RefreshCw className="w-4 h-4" />
                     Try Again
                   </button>
@@ -479,10 +638,10 @@ export default function VerificationPage() {
 
             {/* Progress indicator */}
             {(state === "loading" || state === "analyzing" || state === "validating") && (
-              <div className="mt-6">
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1">
+              <div className="mt-4 sm:mt-6">
+                <div className={classes.progress}>
                   <div
-                    className="bg-gradient-to-r from-blue-500 to-purple-500 h-1 rounded-full transition-all duration-1000 ease-out"
+                    className={`bg-gradient-to-r from-blue-500 to-purple-500 ${classes.progress.includes("h-2") ? "h-2" : classes.progress.includes("h-1.5") ? "h-1.5" : "h-1"} rounded-full transition-all duration-1000 ease-out`}
                     style={{
                       width: state === "loading" ? "33%" : state === "analyzing" ? "66%" : "100%",
                     }}

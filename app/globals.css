@@ -120,6 +120,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 }
 
@@ -138,6 +139,23 @@
 
   .animate-pulse-ring {
     animation: pulseRing 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Device-specific utilities */
+  .mobile-optimized {
+    @apply text-sm;
+  }
+
+  .tablet-optimized {
+    @apply text-base;
+  }
+
+  .desktop-optimized {
+    @apply text-lg;
+  }
+
+  .tv-optimized {
+    @apply text-xl;
   }
 }
 
@@ -173,11 +191,311 @@
   }
 }
 
+/* ===== RESPONSIVE DESIGN FOR ALL DEVICES ===== */
+
+/* Mobile devices (320px - 767px) */
+@media (max-width: 767px) {
+  html {
+    font-size: 14px;
+  }
+
+  .min-h-screen {
+    min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for mobile browsers */
+  }
+
+  /* Mobile-specific optimizations */
+  .mobile-card {
+    margin: 0.75rem;
+    padding: 1rem;
+    border-radius: 1rem;
+  }
+
+  .mobile-icon {
+    width: 64px;
+    height: 64px;
+  }
+
+  .mobile-title {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+
+  .mobile-text {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  .mobile-button {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  /* Reduce particle count for performance */
+  .mobile-particles {
+    display: none;
+  }
+
+  /* Touch-friendly interactions */
+  button,
+  [role="button"] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Tablet devices (768px - 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  html {
+    font-size: 15px;
+  }
+
+  .tablet-card {
+    margin: 1.5rem;
+    padding: 1.5rem;
+    border-radius: 1.25rem;
+  }
+
+  .tablet-icon {
+    width: 80px;
+    height: 80px;
+  }
+
+  .tablet-title {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+
+  .tablet-text {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+
+  .tablet-button {
+    min-height: 48px;
+    padding: 0.875rem 1.25rem;
+    font-size: 1rem;
+  }
+}
+
+/* Desktop devices (1024px - 1919px) */
+@media (min-width: 1024px) and (max-width: 1919px) {
+  html {
+    font-size: 16px;
+  }
+
+  .desktop-card {
+    margin: 2rem;
+    padding: 2rem;
+    border-radius: 1.5rem;
+  }
+
+  .desktop-icon {
+    width: 96px;
+    height: 96px;
+  }
+
+  .desktop-title {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+  }
+
+  .desktop-text {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+
+  .desktop-button {
+    min-height: 48px;
+    padding: 1rem 1.5rem;
+    font-size: 1rem;
+  }
+}
+
+/* TV and Large screens (1920px+) */
+@media (min-width: 1920px) {
+  html {
+    font-size: 18px;
+  }
+
+  .tv-card {
+    margin: 3rem;
+    padding: 3rem;
+    border-radius: 2rem;
+    transform: scale(1.1);
+  }
+
+  .tv-icon {
+    width: 128px;
+    height: 128px;
+  }
+
+  .tv-title {
+    font-size: 2.25rem;
+    line-height: 2.5rem;
+  }
+
+  .tv-text {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+
+  .tv-button {
+    min-height: 56px;
+    padding: 1.25rem 2rem;
+    font-size: 1.125rem;
+  }
+
+  /* More particles for large screens */
+  .tv-particles {
+    opacity: 0.15;
+  }
+}
+
+/* Ultra-wide screens (2560px+) */
+@media (min-width: 2560px) {
+  html {
+    font-size: 20px;
+  }
+
+  .tv-card {
+    transform: scale(1.3);
+  }
+
+  .tv-title {
+    font-size: 2.5rem;
+    line-height: 3rem;
+  }
+
+  .tv-text {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+}
+
+/* Landscape orientation adjustments */
+@media (orientation: landscape) and (max-height: 500px) {
+  .min-h-screen {
+    min-height: 100vh;
+  }
+
+  .landscape-compact {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .landscape-card {
+    padding: 1rem;
+    margin: 0.5rem;
+  }
+
+  .landscape-icon {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Sharper borders and shadows for high DPI */
+  .shadow-2xl {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  }
+}
+
 /* Dark mode improvements */
 @media (prefers-color-scheme: dark) {
   html {
     color-scheme: dark;
   }
+
+  .shadow-2xl {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  }
+
+  .tv-particles {
+    opacity: 0.1;
+  }
+}
+
+/* Light mode improvements */
+@media (prefers-color-scheme: light) {
+  html {
+    color-scheme: light;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --border: 0 0 0;
+    --ring: 0 0 0;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --border: 255 255 255;
+      --ring: 255 255 255;
+    }
+  }
+
+  /* Enhanced contrast for high contrast mode */
+  .bg-white\/95 {
+    background-color: rgb(255 255 255 / 1);
+  }
+
+  .dark\:bg-gray-900\/95 {
+    background-color: rgb(17 24 39 / 1);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-spin,
+  .animate-pulse,
+  .animate-fade-in {
+    animation: none !important;
+  }
+}
+
+/* Focus styles for accessibility */
+*:focus-visible {
+  outline: 2px solid rgb(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgb(var(--muted));
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--muted-foreground));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--foreground));
 }
 
 /* Performance optimizations */
@@ -186,13 +504,40 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Reduce motion for accessibility */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+/* Print styles */
+@media print {
+  * {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+  }
+
+  .min-h-screen {
+    min-height: auto;
+  }
+
+  .absolute,
+  .fixed {
+    position: static !important;
+  }
+}
+
+/* TV-specific optimizations */
+@media (min-width: 1920px) and (min-height: 1080px) {
+  /* 10-foot UI optimizations for TV viewing */
+  .tv-focus:focus {
+    outline: 4px solid rgb(var(--ring));
+    outline-offset: 4px;
+  }
+
+  /* Larger click targets for remote control navigation */
+  button {
+    min-height: 56px;
+    min-width: 56px;
+  }
+
+  /* Enhanced visibility for TV viewing distance */
+  .tv-enhanced-contrast {
+    filter: contrast(1.1) brightness(1.05);
   }
 }
