@@ -570,12 +570,7 @@ export default function VerificationPage() {
                 </div>
 
                 <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">{statusMessages[state]}</h2>
-                <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 px-2">
-                  {currentMessage}
-                  {state === "analyzing" && typewriterIndex < statusMessages.analyzing.length && (
-                    <span className="animate-pulse">|</span>
-                  )}
-                </p>
+                
 
                 {/* Progress bar */}
                 {(state === "loading" || state === "analyzing" || state === "validating") && (
