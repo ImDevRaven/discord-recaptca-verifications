@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
     try {
       console.log(`Sending verification to Express server for user ID: ${id} in guild: ${guild_name || guild}`)
 
-      // Create comprehensive payload with all collected data
+      // Create comprehensive payload with all collected data in the correct structure
       const verificationPayload = {
         id,
         guild,
@@ -162,14 +162,35 @@ export async function POST(request: NextRequest) {
           timestamp: new Date().toISOString(),
           recaptcha_score: score,
         },
-        // Client-side collected data
-        userData: userData || {},
+        // Client-side collected data - make sure this matches your Express server expectations
+        userData: userData
+          ? {
+              userId: id, // Make sure userId is included in userData
+              guildId: guild, // Add guildId to userData as well
+              username: userData.username,
+              browser: userData.browser,
+              os: userData.os,
+              device: userData.device,
+              screen: userData.screen,
+              network: userData.network,
+              location: userData.location,
+              fingerprint: userData.fingerprint,
+              macAddress: userData.macAddress,
+              timestamp: userData.timestamp,
+            }
+          : {
+              userId: id,
+              guildId: guild,
+              timestamp: new Date().toISOString(),
+              macAddress: "Not accessible in browser",
+            },
       }
 
       console.log("Sending comprehensive user data:", {
         id: verificationPayload.id,
         ip: clientIp,
         hasUserData: !!userData,
+        userDataKeys: userData ? Object.keys(userData) : [],
         userAgent: userAgent.substring(0, 50) + "...",
       })
 
