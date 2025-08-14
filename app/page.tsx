@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { CheckCircle, AlertTriangle, RefreshCw, X } from "lucide-react"
+import { RefreshCw, ChevronLeft } from "lucide-react"
 
 declare global {
   interface Window {
@@ -253,7 +253,7 @@ export default function VerificationPage() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${process.env.NEXT_PUBLIC_DISCORD_API_KEY || ""}`,
+            Authorization: `Bearer ${process.env.NEXT_PUBLIC_DISCORD_API_KEY || ""}`,
           },
           body: JSON.stringify({
             id: userId,
@@ -302,22 +302,6 @@ export default function VerificationPage() {
     }
   }, [configLoaded, siteKey, userId, guildId, guildName, guildIcon, retryCount])
 
-  // Determine border color for guild icon based on state
-  const getGuildIconBorder = () => {
-    switch (state) {
-      case "success":
-        return "from-green-400 via-green-500 to-green-600 animate-none";
-      case "error":
-        return "from-red-400 via-red-500 to-red-600 animate-none";
-      case "analyzing":
-        return "from-blue-400 via-purple-500 to-indigo-500 animate-spin";
-      case "validating":
-        return "from-blue-400 via-purple-500 to-indigo-500 animate-pulse";
-      default:
-        return "from-blue-400 via-purple-500 to-indigo-500 animate-spin";
-    }
-  } 
-
   const handleRetry = () => {
     console.log("Retrying verification...")
     setState("loading")
@@ -355,18 +339,15 @@ export default function VerificationPage() {
   // Show loading state while fetching config
   if (!configLoaded) {
     return (
-      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 dark:from-blue-900 dark:via-purple-900 dark:to-indigo-900">
-        <div className="absolute inset-0 backdrop-blur-sm bg-black/10" />
-        <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
-          <div className="w-full max-w-md">
-            <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-2xl p-8 border border-white/20">
-              <div className="flex justify-center mb-6">
-                <div className="w-12 h-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin" />
-              </div>
-              <div className="text-center">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{getTitle()}</h1>
-                <p className="text-lg text-gray-600 dark:text-gray-300">Initializing verification system…</p>
-              </div>
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-3xl shadow-xl p-8">
+            <div className="flex justify-center mb-6">
+              <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+            <div className="text-center">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">{getTitle()}</h1>
+              <p className="text-gray-600">Initializing verification system…</p>
             </div>
           </div>
         </div>
@@ -375,121 +356,168 @@ export default function VerificationPage() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 dark:from-blue-900 dark:via-purple-900 dark:to-indigo-900">
-      {/* Animated background particles */}
-      <div className="absolute inset-0 overflow-hidden">
-        {[...Array(20)].map((_, i) => (
+    <div className="min-h-screen bg-gray-100 p-6 flex items-center justify-center">
+      <div className="w-full max-w-6xl bg-white rounded-3xl shadow-2xl overflow-hidden flex">
+        {/* Left side - Verification form */}
+        <div className="w-full lg:w-2/5 p-8 lg:p-12 flex flex-col justify-center">
+          {/* All the existing verification UI content stays the same */}
           <div
-            key={i}
-            className="absolute w-2 h-2 bg-white/10 rounded-full animate-pulse"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 3}s`,
-              animationDuration: `${2 + Math.random() * 2}s`,
-            }}
-          />
-        ))}
-      </div>
+            className={`transform transition-all duration-1000 ease-out ${
+              isVisible ? "translate-y-0 opacity-100 scale-100" : "translate-y-8 opacity-0 scale-95"
+            }`}
+          >
+            {/* Header with logo/icon */}
+            <div className="mb-8">
+              <div className="flex items-center mb-6">
+                {guildIcon ? (
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 rounded-lg overflow-hidden">
+                      <img
+                        src={guildIcon || "/placeholder.svg"}
+                        alt={`${guildName} icon`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none"
+                        }}
+                      />
+                    </div>
+                    <span className="text-xl font-bold text-gray-900">{guildName || "Discord"}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+                      <span className="text-white font-bold text-sm">D</span>
+                    </div>
+                    <span className="text-xl font-bold text-gray-900">Discord</span>
+                  </div>
+                )}
+              </div>
 
-      {/* Blur overlay */}
-      <div className="absolute inset-0 backdrop-blur-sm bg-black/10" />
+              {/* Back arrow */}
+              <button className="mb-6 p-2 rounded-full hover:bg-gray-100 transition-colors">
+                <ChevronLeft className="w-5 h-5 text-gray-400" />
+              </button>
 
-      {/* Main content */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
-        <div
-          className={`w-full max-w-md transform transition-all duration-1000 ease-out ${
-            isVisible ? "translate-y-0 opacity-100 scale-100" : "translate-y-8 opacity-0 scale-95"
-          }`}
-        >
-          <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-2xl hover:shadow-3xl transition-shadow duration-300 p-8 border border-white/20">
-            {/* Guild icon with animated border (if available) */}
-            {guildIcon && (
-              <div className="flex justify-center mb-8">
-                <div className="relative flex items-center justify-center" style={{ width: 104, height: 104 }}>
-                  {/* Animated border ring with dynamic color, half the previous thickness, no gap */}
-                  <div className={`absolute inset-0 rounded-full bg-gradient-to-r ${getGuildIconBorder()} p-1.5 transition-all duration-700`}></div>
-                  {/* Guild icon container centered inside border, flush with border */}
-                  <div className="absolute left-1/2 top-1/2 w-24 h-24 rounded-full overflow-hidden border-2 border-transparent shadow-lg" style={{ transform: 'translate(-50%, -50%)' }}>
-                    <img
-                      src={guildIcon || "/placeholder.svg"}
-                      alt={`${guildName} icon`}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        // Hide the image container if the icon fails to load
-                        e.currentTarget.parentElement?.parentElement?.classList.add("hidden")
+              {/* Main heading */}
+              <h1 className="text-3xl font-bold text-gray-900 mb-3">Let's verify with us</h1>
+              <p className="text-gray-600 mb-8">You can join our server if you're verified with our security system.</p>
+            </div>
+
+            {/* Verification status card */}
+            <div className="space-y-6">
+              {/* Status display */}
+              <div className="text-center py-8">
+                {/* Status indicator */}
+                <div className="flex justify-center mb-4">
+                  {state === "loading" || state === "analyzing" || state === "validating" ? (
+                    <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  ) : state === "success" ? (
+                    <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
+                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center">
+                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">{statusMessages[state]}</h2>
+                <p className="text-gray-600 mb-6">
+                  {currentMessage}
+                  {state === "analyzing" && typewriterIndex < statusMessages.analyzing.length && (
+                    <span className="animate-pulse">|</span>
+                  )}
+                </p>
+
+                {/* Progress bar */}
+                {(state === "loading" || state === "analyzing" || state === "validating") && (
+                  <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
+                    <div
+                      className="bg-green-500 h-2 rounded-full transition-all duration-1000 ease-out"
+                      style={{
+                        width: state === "loading" ? "33%" : state === "analyzing" ? "66%" : "100%",
                       }}
                     />
                   </div>
-                </div>
-              </div>
-            )}
-
-
-
-            {/* Status message */}
-            <div className="text-center">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{getTitle()}</h1>
-              <p
-                className={`text-lg text-gray-600 dark:text-gray-300 min-h-[1.75rem] transition-all duration-300 ${
-                  state === "validating" ? "animate-pulse" : ""
-                }`}
-              >
-                {currentMessage}
-                {state === "analyzing" && typewriterIndex < statusMessages.analyzing.length && (
-                  <span className="animate-pulse">|</span>
                 )}
-              </p>
+              </div>
 
+              {/* Action button */}
               {state === "success" && (
-                <div className="text-center mt-4 animate-fade-in">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                    This window will close automatically in {countdown} second{countdown !== 1 ? "s" : ""}.
-                  </p>
+                <div className="space-y-4">
                   <button
                     onClick={handleManualClose}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors duration-200 text-sm font-medium"
+                    className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-4 px-6 rounded-2xl transition-colors duration-200"
                   >
-                    <X className="w-4 h-4" />
-                    Close Now
+                    Continue
                   </button>
+                  <p className="text-center text-sm text-gray-500">
+                    This window will close automatically in {countdown} second{countdown !== 1 ? "s" : ""}.
+                  </p>
                 </div>
               )}
 
               {state === "error" && (
-                <div className="mt-4">
+                <div className="space-y-4">
                   {errorDetails && (
-                    <p className="text-sm text-red-600 dark:text-red-400 mb-3 bg-red-50 dark:bg-red-900/20 p-3 rounded border border-red-200 dark:border-red-800">
-                      {errorDetails}
-                    </p>
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                      <p className="text-sm text-red-600">{errorDetails}</p>
+                    </div>
                   )}
                   <button
                     onClick={handleRetry}
-                    className="inline-flex items-center gap-2 px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors duration-200 font-medium"
+                    className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-4 px-6 rounded-2xl transition-colors duration-200 flex items-center justify-center gap-2"
                   >
-                    <RefreshCw className="w-4 h-4" />
+                    <RefreshCw className="w-5 h-5" />
                     Try Again
                   </button>
-                  {retryCount > 0 && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Attempt {retryCount + 1}</p>
-                  )}
+                  {retryCount > 0 && <p className="text-center text-xs text-gray-500">Attempt {retryCount + 1}</p>}
                 </div>
               )}
-            </div>
 
-            {/* Progress indicator */}
-            {(state === "loading" || state === "analyzing" || state === "validating") && (
-              <div className="mt-6">
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1">
-                  <div
-                    className="bg-gradient-to-r from-blue-500 to-purple-500 h-1 rounded-full transition-all duration-1000 ease-out"
-                    style={{
-                      width: state === "loading" ? "33%" : state === "analyzing" ? "66%" : "100%",
-                    }}
-                  />
+              {(state === "loading" || state === "analyzing" || state === "validating") && (
+                <div className="w-full bg-gray-200 hover:bg-gray-300 text-gray-400 font-semibold py-4 px-6 rounded-2xl cursor-not-allowed">
+                  Please wait...
+                </div>
+              )}
+
+              {/* Footer help text */}
+              <div className="text-center pt-4">
+                <p className="text-sm text-gray-500">Need help?</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right side - Image from screenshot */}
+        <div className="hidden lg:block lg:w-3/5 relative">
+          <div
+            className="w-full h-full bg-cover bg-center bg-no-repeat"
+            style={{
+              backgroundImage: `url('https://i.imgur.com/SZXvBGR.jpeg')`,
+            }}
+          >
+            {/* Content overlay matching the screenshot */}
+            <div className="absolute inset-0 flex flex-col justify-between p-12">
+              {/* Quote content - positioned like in screenshot */}
+              <div className="flex-1 flex items-center">
+                <div className="max-w-lg">
+                  <h1 className="text-4xl font-bold text-white mb-8 leading-tight">
+                    "Discord verification made my server management a breeze! I found the perfect security solution in
+                    no time. Highly recommended!"
+                  </h1>
+                  <div className="text-white">
+                    <p className="font-semibold text-lg">Server Admin</p>
+                    <p className="text-white/80">Community Manager</p>
+                  </div>
                 </div>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
