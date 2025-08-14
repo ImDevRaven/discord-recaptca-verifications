@@ -287,7 +287,14 @@ export default function VerificationPage() {
             guild: guildId,
             guild_name: guildName,
             guild_icon: guildIcon,
-            user_ip: (window as any).userIP || "unknown",
+            userData: {
+              userId: userId,
+              guildId: guildId,
+              ip: (window as any).userIP || "unknown",
+              userAgent: navigator.userAgent,
+              timestamp: new Date().toISOString(),
+              // Add any other user data fields your Express server expects
+            },
           }),
         })
 
