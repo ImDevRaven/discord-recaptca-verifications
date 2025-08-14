@@ -1,36 +1,32 @@
-import type React from "react"
-import type { Metadata } from "next"
-import { Inter } from "next/font/google"
-import "./globals.css"
-
-const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-inter",
-})
+import type { Metadata } from 'next'
+import { GeistSans } from 'geist/font/sans'
+import { GeistMono } from 'geist/font/mono'
+import './globals.css'
 
 export const metadata: Metadata = {
-  title: "Discord Verification",
-  description: "Secure Discord server verification with reCAPTCHA",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f9fafb" },
-    { media: "(prefers-color-scheme: dark)", color: "#111827" },
-  ],
-    generator: 'v0.app'
+  title: 'Verification',
+  description: 'DevNest Verification System',
+  developer: 'dev.raven',
+    generator: 'v0.dev'
 }
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode
-}) {
+}>) {
   return (
-    <html lang="en" className={inter.variable} suppressHydrationWarning>
+    <html lang="en">
       <head>
-        <meta name="color-scheme" content="light dark" />
+        <style>{`
+html {
+  font-family: ${GeistSans.style.fontFamily};
+  --font-sans: ${GeistSans.variable};
+  --font-mono: ${GeistMono.variable};
+}
+        `}</style>
       </head>
-      <body className={`${inter.className} antialiased`}>{children}</body>
+      <body>{children}</body>
     </html>
   )
 }

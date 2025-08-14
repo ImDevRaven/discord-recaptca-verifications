@@ -253,7 +253,7 @@ export default function VerificationPage() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_DISCORD_API_KEY || ""}`,
+            "Authorization": `Bearer ${process.env.NEXT_PUBLIC_DISCORD_API_KEY || ""}`,
           },
           body: JSON.stringify({
             id: userId,
@@ -306,31 +306,17 @@ export default function VerificationPage() {
   const getGuildIconBorder = () => {
     switch (state) {
       case "success":
-        return "border-green-500"
+        return "from-green-400 via-green-500 to-green-600 animate-none";
       case "error":
-        return "border-red-500"
+        return "from-red-400 via-red-500 to-red-600 animate-none";
       case "analyzing":
-        return "border-blue-500 animate-pulse"
+        return "from-blue-400 via-purple-500 to-indigo-500 animate-spin";
       case "validating":
-        return "border-purple-500 animate-pulse"
+        return "from-blue-400 via-purple-500 to-indigo-500 animate-pulse";
       default:
-        return "border-gray-300 dark:border-gray-600 animate-pulse"
+        return "from-blue-400 via-purple-500 to-indigo-500 animate-spin";
     }
-  }
-
-  const getStatusIcon = () => {
-    switch (state) {
-      case "success":
-        return <CheckCircle className="w-5 h-5 text-green-500" />
-      case "error":
-        return <AlertTriangle className="w-5 h-5 text-red-500" />
-      case "analyzing":
-      case "validating":
-        return <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-      default:
-        return <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-    }
-  }
+  } 
 
   const handleRetry = () => {
     console.log("Retrying verification...")
@@ -369,27 +355,17 @@ export default function VerificationPage() {
   // Show loading state while fetching config
   if (!configLoaded) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-            <div className="flex items-center space-x-4">
-              {guildIcon && (
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-gray-300 dark:border-gray-600">
-                    <img
-                      src={guildIcon || "/placeholder.svg"}
-                      alt={`${guildName} icon`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <h1 className="text-lg font-semibold text-gray-900 dark:text-white truncate">{getTitle()}</h1>
-                <div className="flex items-center space-x-2 mt-1">
-                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Initializing verification system…</p>
-                </div>
+      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 dark:from-blue-900 dark:via-purple-900 dark:to-indigo-900">
+        <div className="absolute inset-0 backdrop-blur-sm bg-black/10" />
+        <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
+          <div className="w-full max-w-md">
+            <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-2xl p-8 border border-white/20">
+              <div className="flex justify-center mb-6">
+                <div className="w-12 h-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin" />
+              </div>
+              <div className="text-center">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{getTitle()}</h1>
+                <p className="text-lg text-gray-600 dark:text-gray-300">Initializing verification system…</p>
               </div>
             </div>
           </div>
@@ -399,100 +375,121 @@ export default function VerificationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
-      <div
-        className={`w-full max-w-md transform transition-all duration-500 ease-out ${
-          isVisible ? "translate-y-0 opacity-100 scale-100" : "translate-y-4 opacity-0 scale-95"
-        }`}
-      >
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-start space-x-4">
-            {/* Guild Icon */}
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 dark:from-blue-900 dark:via-purple-900 dark:to-indigo-900">
+      {/* Animated background particles */}
+      <div className="absolute inset-0 overflow-hidden">
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-2 h-2 bg-white/10 rounded-full animate-pulse"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 3}s`,
+              animationDuration: `${2 + Math.random() * 2}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Blur overlay */}
+      <div className="absolute inset-0 backdrop-blur-sm bg-black/10" />
+
+      {/* Main content */}
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
+        <div
+          className={`w-full max-w-md transform transition-all duration-1000 ease-out ${
+            isVisible ? "translate-y-0 opacity-100 scale-100" : "translate-y-8 opacity-0 scale-95"
+          }`}
+        >
+          <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-2xl hover:shadow-3xl transition-shadow duration-300 p-8 border border-white/20">
+            {/* Guild icon with animated border (if available) */}
             {guildIcon && (
-              <div className="flex-shrink-0">
-                <div
-                  className={`w-12 h-12 rounded-full overflow-hidden border-2 ${getGuildIconBorder()} transition-colors duration-300`}
-                >
-                  <img
-                    src={guildIcon || "/placeholder.svg"}
-                    alt={`${guildName} icon`}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none"
+              <div className="flex justify-center mb-8">
+                <div className="relative flex items-center justify-center" style={{ width: 104, height: 104 }}>
+                  {/* Animated border ring with dynamic color, half the previous thickness, no gap */}
+                  <div className={`absolute inset-0 rounded-full bg-gradient-to-r ${getGuildIconBorder()} p-1.5 transition-all duration-700`}></div>
+                  {/* Guild icon container centered inside border, flush with border */}
+                  <div className="absolute left-1/2 top-1/2 w-24 h-24 rounded-full overflow-hidden border-2 border-transparent shadow-lg" style={{ transform: 'translate(-50%, -50%)' }}>
+                    <img
+                      src={guildIcon || "/placeholder.svg"}
+                      alt={`${guildName} icon`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Hide the image container if the icon fails to load
+                        e.currentTarget.parentElement?.parentElement?.classList.add("hidden")
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+
+
+            {/* Status message */}
+            <div className="text-center">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{getTitle()}</h1>
+              <p
+                className={`text-lg text-gray-600 dark:text-gray-300 min-h-[1.75rem] transition-all duration-300 ${
+                  state === "validating" ? "animate-pulse" : ""
+                }`}
+              >
+                {currentMessage}
+                {state === "analyzing" && typewriterIndex < statusMessages.analyzing.length && (
+                  <span className="animate-pulse">|</span>
+                )}
+              </p>
+
+              {state === "success" && (
+                <div className="text-center mt-4 animate-fade-in">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                    This window will close automatically in {countdown} second{countdown !== 1 ? "s" : ""}.
+                  </p>
+                  <button
+                    onClick={handleManualClose}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors duration-200 text-sm font-medium"
+                  >
+                    <X className="w-4 h-4" />
+                    Close Now
+                  </button>
+                </div>
+              )}
+
+              {state === "error" && (
+                <div className="mt-4">
+                  {errorDetails && (
+                    <p className="text-sm text-red-600 dark:text-red-400 mb-3 bg-red-50 dark:bg-red-900/20 p-3 rounded border border-red-200 dark:border-red-800">
+                      {errorDetails}
+                    </p>
+                  )}
+                  <button
+                    onClick={handleRetry}
+                    className="inline-flex items-center gap-2 px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors duration-200 font-medium"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Try Again
+                  </button>
+                  {retryCount > 0 && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Attempt {retryCount + 1}</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Progress indicator */}
+            {(state === "loading" || state === "analyzing" || state === "validating") && (
+              <div className="mt-6">
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1">
+                  <div
+                    className="bg-gradient-to-r from-blue-500 to-purple-500 h-1 rounded-full transition-all duration-1000 ease-out"
+                    style={{
+                      width: state === "loading" ? "33%" : state === "analyzing" ? "66%" : "100%",
                     }}
                   />
                 </div>
               </div>
             )}
-
-            {/* Content */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center space-x-2 mb-2">
-                <h1 className="text-lg font-semibold text-gray-900 dark:text-white truncate">{getTitle()}</h1>
-              </div>
-
-              {/* Status */}
-              <div className="flex items-center space-x-2 mb-4">
-                {getStatusIcon()}
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {currentMessage}
-                  {state === "analyzing" && typewriterIndex < statusMessages.analyzing.length && (
-                    <span className="animate-pulse">|</span>
-                  )}
-                </p>
-              </div>
-
-              {/* Progress Bar */}
-              {(state === "loading" || state === "analyzing" || state === "validating") && (
-                <div className="mb-4">
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-                    <div
-                      className="bg-blue-500 h-1.5 rounded-full transition-all duration-1000 ease-out"
-                      style={{
-                        width: state === "loading" ? "33%" : state === "analyzing" ? "66%" : "100%",
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Success Actions */}
-              {state === "success" && (
-                <div className="space-y-3">
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    This window will close automatically in {countdown} second{countdown !== 1 ? "s" : ""}.
-                  </p>
-                  <button
-                    onClick={handleManualClose}
-                    className="w-full inline-flex items-center justify-center space-x-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors duration-200"
-                  >
-                    <X className="w-4 h-4" />
-                    <span>Close Now</span>
-                  </button>
-                </div>
-              )}
-
-              {/* Error Actions */}
-              {state === "error" && (
-                <div className="space-y-3">
-                  {errorDetails && (
-                    <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                      <p className="text-xs text-red-600 dark:text-red-400">{errorDetails}</p>
-                    </div>
-                  )}
-                  <button
-                    onClick={handleRetry}
-                    className="w-full inline-flex items-center justify-center space-x-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors duration-200"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                    <span>Try Again</span>
-                  </button>
-                  {retryCount > 0 && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center">Attempt {retryCount + 1}</p>
-                  )}
-                </div>
-              )}
-            </div>
           </div>
         </div>
       </div>

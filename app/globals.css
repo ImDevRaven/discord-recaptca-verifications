@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@custom-variant dark (&:is(.dark *));
+
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -121,52 +123,70 @@
   }
 }
 
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+
+  .shadow-3xl {
+    box-shadow: 0 35px 60px -12px rgba(0, 0, 0, 0.25);
+  }
+
+  .animate-spin-slow {
+    animation: spin 3s linear infinite;
+  }
+
+  .animate-pulse-ring {
+    animation: pulseRing 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulseRing {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+/* Dark mode improvements */
+@media (prefers-color-scheme: dark) {
+  html {
+    color-scheme: dark;
+  }
+}
+
+/* Performance optimizations */
 * {
-  border-color: rgb(var(--border));
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-body {
-  color: rgb(var(--foreground));
-  background: rgb(var(--background));
-  font-feature-settings: "rlig" 1, "calt" 1;
-}
-
-/* Smooth transitions for theme changes */
-* {
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
-}
-
-/* Responsive design improvements */
-@media (max-width: 640px) {
-  .min-h-screen {
-    min-height: 100vh;
-    min-height: 100dvh; /* Dynamic viewport height for mobile */
-  }
-}
-
-/* TV/Large screen optimizations */
-@media (min-width: 1920px) {
-  body {
-    font-size: 1.125rem; /* Larger base font size for TV */
-  }
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  :root {
-    --border: 0 0 0;
-    --ring: 0 0 0;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --border: 255 255 255;
-      --ring: 255 255 255;
-    }
-  }
-}
-
-/* Reduced motion support */
+/* Reduce motion for accessibility */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -174,30 +194,5 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
   }
-}
-
-/* Focus styles for accessibility */
-*:focus-visible {
-  outline: 2px solid rgb(var(--ring));
-  outline-offset: 2px;
-}
-
-/* Custom scrollbar for webkit browsers */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: rgb(var(--muted));
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgb(var(--muted-foreground));
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgb(var(--foreground));
 }
