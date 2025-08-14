@@ -20,6 +20,13 @@ const statusMessages = {
   error: "Verification failed. Please try again.",
 }
 
+const wallpapers = [
+  "https://i.imgur.com/SZXvBGR.jpeg",
+  "https://i.postimg.cc/hPXJrGKF/warframe-wallpapers-5-v0-vg3x6ui7s4j81.png",
+  "https://i.postimg.cc/4KXWX7ZZ/img.jpg",
+  "https://i.postimg.cc/W3s8FZLc/blue-eyes-warframe-portrait-hd-warframe-2560x1440.jpg",
+]
+
 export default function VerificationPage() {
   const [state, setState] = useState<VerificationState>("loading")
   const [isVisible, setIsVisible] = useState(false)
@@ -30,6 +37,7 @@ export default function VerificationPage() {
   const [errorDetails, setErrorDetails] = useState<string>("")
   const [retryCount, setRetryCount] = useState(0)
   const [countdown, setCountdown] = useState(5)
+  const [selectedWallpaper, setSelectedWallpaper] = useState<string>("")
   const searchParams = useSearchParams()
 
   // Extract parameters from URL
@@ -45,6 +53,12 @@ export default function VerificationPage() {
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), 100)
     return () => clearTimeout(timer)
+  }, [])
+
+  // Random wallpaper selection on mount
+  useEffect(() => {
+    const randomIndex = Math.floor(Math.random() * wallpapers.length)
+    setSelectedWallpaper(wallpapers[randomIndex])
   }, [])
 
   // Countdown timer for success state
@@ -496,25 +510,30 @@ export default function VerificationPage() {
 
         {/* Right side - Image from screenshot */}
         <div className="hidden lg:block lg:w-[65%] relative">
+          {/* Background image with blur and overlay */}
           <div
-            className="w-full h-full bg-cover bg-center bg-no-repeat"
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
             style={{
-              backgroundImage: `url('https://i.imgur.com/SZXvBGR.jpeg')`,
+              backgroundImage: `url('${selectedWallpaper}')`,
+              filter: "blur(1px)",
             }}
           >
-            {/* Content overlay matching the screenshot */}
-            <div className="absolute inset-0 flex flex-col justify-between p-12">
-              {/* Quote content - positioned like in screenshot */}
-              <div className="flex-1 flex items-center">
-                <div className="max-w-lg">
-                  <h1 className="text-4xl font-bold text-white mb-8 leading-tight">
-                    "Discord verification made my server management a breeze! I found the perfect security solution in
-                    no time. Highly recommended!"
-                  </h1>
-                  <div className="text-white">
-                    <p className="font-semibold text-lg">Server Admin</p>
-                    <p className="text-white/80">Community Manager</p>
-                  </div>
+            {/* Dark overlay only on background */}
+            <div className="absolute inset-0 bg-black/20"></div>
+          </div>
+
+          {/* Content overlay - NOT affected by blur or dark overlay */}
+          <div className="relative z-10 h-full flex flex-col justify-between p-12">
+            {/* Quote content - positioned like in screenshot */}
+            <div className="flex-1 flex items-center">
+              <div className="max-w-lg">
+                <h1 className="text-4xl font-bold text-white mb-8 leading-tight drop-shadow-lg">
+                  "Discord verification made my server management a breeze! I found the perfect security solution in no
+                  time. Highly recommended!"
+                </h1>
+                <div className="text-white">
+                  <p className="font-semibold text-lg drop-shadow-md">Server Admin</p>
+                  <p className="text-white/80 drop-shadow-md">Community Manager</p>
                 </div>
               </div>
             </div>
