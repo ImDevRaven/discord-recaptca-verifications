@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { RefreshCw, ChevronLeft } from "lucide-react"
+import { RefreshCw } from "lucide-react"
 
 declare global {
   interface Window {
@@ -408,9 +408,7 @@ export default function VerificationPage() {
               </div>
 
               {/* Back arrow */}
-              <button className="mb-6 p-2 rounded-full hover:bg-gray-100 transition-colors">
-                
-              </button>
+              <button className="mb-6 p-2 rounded-full hover:bg-gray-100 transition-colors"></button>
 
               {/* Main heading */}
               <h1 className="text-3xl font-bold text-gray-900 mb-3">Let's verify with us</h1>
@@ -528,12 +526,12 @@ export default function VerificationPage() {
             <div className="flex-1 flex items-center">
               <div className="max-w-lg">
                 <h1 className="text-4xl font-bold text-white mb-8 leading-tight drop-shadow-lg">
-                  "Discord verification made my server management a breeze! I found the perfect security solution in no
-                  time. Highly recommended!"
+                  "{guildName || "Discord"} verification made my server management a breeze! I found the perfect
+                  security solution in no time. Highly recommended!"
                 </h1>
                 <div className="text-white">
                   <p className="font-semibold text-lg drop-shadow-md">Server Admin</p>
-                  <p className="text-white/80 drop-shadow-md">Community Manager</p>
+                  <p className="text-white/80 drop-shadow-md">Dev.Raven</p>
                 </div>
               </div>
             </div>
