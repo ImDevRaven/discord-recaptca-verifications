@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { RefreshCw, X } from "lucide-react"
-import { collectUserData, type UserData } from "@/lib/userDataCollector"
+import { CheckCircle, AlertTriangle, RefreshCw, X } from "lucide-react"
 
 declare global {
   interface Window {
@@ -32,8 +31,6 @@ export default function VerificationPage() {
   const [retryCount, setRetryCount] = useState(0)
   const [countdown, setCountdown] = useState(5)
   const searchParams = useSearchParams()
-  const [userData, setUserData] = useState<UserData | null>(null)
-  const [dataCollectionStatus, setDataCollectionStatus] = useState<"pending" | "success" | "failed">("pending")
 
   // Extract parameters from URL
   const userId = searchParams.get("id")
@@ -43,91 +40,6 @@ export default function VerificationPage() {
 
   // Development mode check
   const isDevelopment = process.env.NODE_ENV === "development"
-
-  // Device detection
-  const [deviceType, setDeviceType] = useState<"mobile" | "tablet" | "desktop" | "tv">("desktop")
-
-  useEffect(() => {
-    const detectDevice = () => {
-      const width = window.innerWidth
-      if (width < 768) setDeviceType("mobile")
-      else if (width < 1024) setDeviceType("tablet")
-      else if (width < 1920) setDeviceType("desktop")
-      else setDeviceType("tv")
-    }
-
-    detectDevice()
-    window.addEventListener("resize", detectDevice)
-    return () => window.removeEventListener("resize", detectDevice)
-  }, [])
-
-  // Automatically collect user data on component mount (no user prompts)
-  useEffect(() => {
-    const collectData = async () => {
-      try {
-        console.log("🔍 Starting automatic data collection...")
-        setDataCollectionStatus("pending")
-
-        const data = await collectUserData(userId || undefined, undefined)
-
-        // Validate that we actually got data
-        if (!data || Object.keys(data).length === 0) {
-          throw new Error("No data collected")
-        }
-
-        setUserData(data)
-        setDataCollectionStatus("success")
-
-        console.log("✅ Automatic data collection completed successfully:", {
-          hasUserId: !!data.userId,
-          hasBrowser: !!data.browser?.name,
-          hasOS: !!data.os?.name,
-          hasDevice: !!data.device?.type,
-          hasLocation: !!data.location?.city,
-          hasFingerprint: !!data.fingerprint,
-          timestamp: data.timestamp,
-          dataKeys: Object.keys(data),
-        })
-      } catch (error) {
-        console.error("❌ Failed to collect user data:", error)
-        setDataCollectionStatus("failed")
-
-        // Create minimal fallback data to ensure we always have something
-        const fallbackData: UserData = {
-          userId: userId || undefined,
-          timestamp: new Date().toISOString(),
-          macAddress: "Not accessible in browser",
-          browser: {
-            name: "Unknown",
-            version: "Unknown",
-            userAgent: navigator?.userAgent || "Unknown",
-            language: navigator?.language || "Unknown",
-          },
-          os: {
-            name: "Unknown",
-            version: "Unknown",
-            platform: navigator?.platform || "Unknown",
-          },
-          device: {
-            type: "unknown",
-            vendor: "Unknown",
-          },
-          location: {
-            country: "Unknown",
-            region: "Unknown",
-            city: "Unknown",
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          },
-          fingerprint: "fallback-" + Date.now().toString(36),
-        }
-
-        setUserData(fallbackData)
-        console.log("🔄 Using fallback user data:", fallbackData)
-      }
-    }
-
-    collectData()
-  }, [userId])
 
   // Fade in animation on mount
   useEffect(() => {
@@ -208,16 +120,7 @@ export default function VerificationPage() {
 
   // reCAPTCHA verification flow
   useEffect(() => {
-    // Wait for both config and user data to be ready
-    if (!configLoaded || !siteKey || !userData) {
-      console.log("⏳ Waiting for prerequisites:", {
-        configLoaded,
-        hasSiteKey: !!siteKey,
-        hasUserData: !!userData,
-        dataCollectionStatus,
-      })
-      return
-    }
+    if (!configLoaded || !siteKey) return
 
     let isComponentMounted = true
 
@@ -335,16 +238,7 @@ export default function VerificationPage() {
       if (!isComponentMounted) return
 
       try {
-        console.log("🚀 Starting token verification with collected user data...")
-        console.log("📊 User data being sent:", {
-          hasUserData: !!userData,
-          userDataKeys: userData ? Object.keys(userData) : [],
-          userId: userData?.userId,
-          browser: userData?.browser?.name,
-          os: userData?.os?.name,
-          location: userData?.location?.city,
-          dataCollectionStatus,
-        })
+        console.log("Starting token verification...")
 
         // Transition through states
         setTimeout(() => {
@@ -355,33 +249,23 @@ export default function VerificationPage() {
           if (isComponentMounted) setState("validating")
         }, 3500)
 
-        const requestPayload = {
-          id: userId,
-          captcha: token,
-          guild: guildId,
-          guild_name: guildName,
-          guild_icon: guildIcon,
-          userData: userData, // Include automatically collected user data
-        }
-
-        console.log("📤 Sending request payload:", {
-          id: requestPayload.id,
-          hasUserData: !!requestPayload.userData,
-          userDataType: typeof requestPayload.userData,
-          userDataKeys: requestPayload.userData ? Object.keys(requestPayload.userData) : [],
-        })
-
         const response = await fetch("/api/verify", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${process.env.NEXT_PUBLIC_DISCORD_API_KEY || ""}`,
           },
-          body: JSON.stringify(requestPayload),
+          body: JSON.stringify({
+            id: userId,
+            captcha: token,
+            guild: guildId,
+            guild_name: guildName,
+            guild_icon: guildIcon,
+          }),
         })
 
         const result = await response.json()
-        console.log("📥 Verification result:", result)
+        console.log("Verification result:", result)
 
         setTimeout(() => {
           if (!isComponentMounted) return
@@ -408,7 +292,6 @@ export default function VerificationPage() {
     // Start the process
     const timer = setTimeout(() => {
       if (isComponentMounted) {
-        console.log("🎯 Starting reCAPTCHA flow with user data ready")
         loadRecaptcha()
       }
     }, 500)
@@ -417,21 +300,35 @@ export default function VerificationPage() {
       isComponentMounted = false
       clearTimeout(timer)
     }
-  }, [configLoaded, siteKey, userId, guildId, guildName, guildIcon, retryCount, userData, dataCollectionStatus])
+  }, [configLoaded, siteKey, userId, guildId, guildName, guildIcon, retryCount])
 
   // Determine border color for guild icon based on state
   const getGuildIconBorder = () => {
     switch (state) {
       case "success":
-        return "from-green-400 via-green-500 to-green-600 animate-none"
+        return "border-green-500"
       case "error":
-        return "from-red-400 via-red-500 to-red-600 animate-none"
+        return "border-red-500"
       case "analyzing":
-        return "from-blue-400 via-purple-500 to-indigo-500 animate-spin"
+        return "border-blue-500 animate-pulse"
       case "validating":
-        return "from-blue-400 via-purple-500 to-indigo-500 animate-pulse"
+        return "border-purple-500 animate-pulse"
       default:
-        return "from-blue-400 via-purple-500 to-indigo-500 animate-spin"
+        return "border-gray-300 dark:border-gray-600 animate-pulse"
+    }
+  }
+
+  const getStatusIcon = () => {
+    switch (state) {
+      case "success":
+        return <CheckCircle className="w-5 h-5 text-green-500" />
+      case "error":
+        return <AlertTriangle className="w-5 h-5 text-red-500" />
+      case "analyzing":
+      case "validating":
+        return <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      default:
+        return <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
     }
   }
 
@@ -451,10 +348,6 @@ export default function VerificationPage() {
     // Remove existing scripts
     const existingScripts = document.querySelectorAll('script[src*="recaptcha"]')
     existingScripts.forEach((script) => script.remove())
-
-    // Reset data collection
-    setDataCollectionStatus("pending")
-    setUserData(null)
   }
 
   const handleManualClose = () => {
@@ -473,110 +366,30 @@ export default function VerificationPage() {
     return "Discord Verification"
   }
 
-  // Get responsive classes based on device type
-  const getResponsiveClasses = () => {
-    const base = {
-      container: "w-full",
-      card: "bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl shadow-2xl hover:shadow-3xl transition-shadow duration-300 border border-white/20",
-      icon: "relative flex items-center justify-center",
-      title: "font-bold text-gray-900 dark:text-white",
-      text: "text-gray-600 dark:text-gray-300 min-h-[1.75rem] transition-all duration-300",
-      button:
-        "inline-flex items-center gap-2 text-white rounded-lg transition-colors duration-200 font-medium touch-manipulation tv-focus",
-      progress: "w-full bg-gray-200 dark:bg-gray-700 rounded-full",
-    }
-
-    switch (deviceType) {
-      case "mobile":
-        return {
-          ...base,
-          container: `${base.container} max-w-xs`,
-          card: `${base.card} mobile-card`,
-          icon: `${base.icon} mobile-icon`,
-          title: `${base.title} mobile-title`,
-          text: `${base.text} mobile-text`,
-          button: `${base.button} mobile-button`,
-          progress: `${base.progress} h-1`,
-        }
-      case "tablet":
-        return {
-          ...base,
-          container: `${base.container} max-w-sm`,
-          card: `${base.card} tablet-card`,
-          icon: `${base.icon} tablet-icon`,
-          title: `${base.title} tablet-title`,
-          text: `${base.text} tablet-text`,
-          button: `${base.button} tablet-button`,
-          progress: `${base.progress} h-1.5`,
-        }
-      case "desktop":
-        return {
-          ...base,
-          container: `${base.container} max-w-md`,
-          card: `${base.card} desktop-card`,
-          icon: `${base.icon} desktop-icon`,
-          title: `${base.title} desktop-title`,
-          text: `${base.text} desktop-text`,
-          button: `${base.button} desktop-button`,
-          progress: `${base.progress} h-1`,
-        }
-      case "tv":
-        return {
-          ...base,
-          container: `${base.container} max-w-lg`,
-          card: `${base.card} tv-card tv-enhanced-contrast`,
-          icon: `${base.icon} tv-icon`,
-          title: `${base.title} tv-title`,
-          text: `${base.text} tv-text`,
-          button: `${base.button} tv-button`,
-          progress: `${base.progress} h-2`,
-        }
-      default:
-        return base
-    }
-  }
-
-  const classes = getResponsiveClasses()
-
-  // Get particle count based on device
-  const getParticleCount = () => {
-    switch (deviceType) {
-      case "mobile":
-        return 8
-      case "tablet":
-        return 15
-      case "desktop":
-        return 20
-      case "tv":
-        return 30
-      default:
-        return 20
-    }
-  }
-
-  // Show loading state while fetching config or collecting data
-  if (!configLoaded || !userData) {
+  // Show loading state while fetching config
+  if (!configLoaded) {
     return (
-      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 dark:from-blue-900 dark:via-purple-900 dark:to-indigo-900 landscape-compact">
-        <div className="absolute inset-0 backdrop-blur-sm bg-black/10" />
-        <div className="relative z-10 min-h-screen flex items-center justify-center p-3 sm:p-4 md:p-6 lg:p-8">
-          <div className={classes.container}>
-            <div className={classes.card}>
-              <div className="flex justify-center mb-4 sm:mb-6">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 border-2 sm:border-4 border-blue-400 border-t-transparent rounded-full animate-spin" />
-              </div>
-              <div className="text-center">
-                <h1 className={classes.title}>{getTitle()}</h1>
-                <p className={classes.text}>
-                  {!configLoaded
-                    ? "Initializing verification system…"
-                    : dataCollectionStatus === "pending"
-                      ? "Collecting system information…"
-                      : "Preparing verification…"}
-                </p>
-                {dataCollectionStatus === "failed" && (
-                  <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2">Using fallback data collection</p>
-                )}
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+            <div className="flex items-center space-x-4">
+              {guildIcon && (
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-gray-300 dark:border-gray-600">
+                    <img
+                      src={guildIcon || "/placeholder.svg"}
+                      alt={`${guildName} icon`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <h1 className="text-lg font-semibold text-gray-900 dark:text-white truncate">{getTitle()}</h1>
+                <div className="flex items-center space-x-2 mt-1">
+                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Initializing verification system…</p>
+                </div>
               </div>
             </div>
           </div>
@@ -586,158 +399,100 @@ export default function VerificationPage() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 dark:from-blue-900 dark:via-purple-900 dark:to-indigo-900 landscape-compact">
-      {/* Animated background particles - responsive count */}
-      <div className="absolute inset-0 overflow-hidden">
-        {[...Array(getParticleCount())].map((_, i) => (
-          <div
-            key={i}
-            className={`absolute w-1 h-1 sm:w-2 sm:h-2 bg-white/10 rounded-full animate-pulse ${deviceType === "mobile" ? "mobile-particles" : ""} ${deviceType === "tv" ? "tv-particles" : ""}`}
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 3}s`,
-              animationDuration: `${2 + Math.random() * 2}s`,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Blur overlay */}
-      <div className="absolute inset-0 backdrop-blur-sm bg-black/10" />
-
-      {/* Main content */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-3 sm:p-4 md:p-6 lg:p-8">
-        <div
-          className={`${classes.container} transform transition-all duration-1000 ease-out ${
-            isVisible ? "translate-y-0 opacity-100 scale-100" : "translate-y-8 opacity-0 scale-95"
-          }`}
-        >
-          <div className={classes.card}>
-            {/* Guild icon with animated border (if available) */}
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+      <div
+        className={`w-full max-w-md transform transition-all duration-500 ease-out ${
+          isVisible ? "translate-y-0 opacity-100 scale-100" : "translate-y-4 opacity-0 scale-95"
+        }`}
+      >
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex items-start space-x-4">
+            {/* Guild Icon */}
             {guildIcon && (
-              <div className="flex justify-center mb-6 sm:mb-8">
+              <div className="flex-shrink-0">
                 <div
-                  className={classes.icon}
-                  style={{
-                    width:
-                      deviceType === "mobile"
-                        ? "80px"
-                        : deviceType === "tablet"
-                          ? "88px"
-                          : deviceType === "tv"
-                            ? "128px"
-                            : "104px",
-                    height:
-                      deviceType === "mobile"
-                        ? "80px"
-                        : deviceType === "tablet"
-                          ? "88px"
-                          : deviceType === "tv"
-                            ? "128px"
-                            : "104px",
-                  }}
+                  className={`w-12 h-12 rounded-full overflow-hidden border-2 ${getGuildIconBorder()} transition-colors duration-300`}
                 >
-                  {/* Animated border ring with dynamic color */}
-                  <div
-                    className={`absolute inset-0 rounded-full bg-gradient-to-r ${getGuildIconBorder()} p-1 sm:p-1.5 transition-all duration-700`}
-                  ></div>
-                  {/* Guild icon container centered inside border */}
-                  <div
-                    className="absolute left-1/2 top-1/2 rounded-full overflow-hidden border-2 border-transparent shadow-lg"
-                    style={{
-                      width:
-                        deviceType === "mobile"
-                          ? "64px"
-                          : deviceType === "tablet"
-                            ? "72px"
-                            : deviceType === "tv"
-                              ? "112px"
-                              : "96px",
-                      height:
-                        deviceType === "mobile"
-                          ? "64px"
-                          : deviceType === "tablet"
-                            ? "72px"
-                            : deviceType === "tv"
-                              ? "112px"
-                              : "96px",
-                      transform: "translate(-50%, -50%)",
-                    }}
-                  >
-                    <img
-                      src={guildIcon || "/placeholder.svg"}
-                      alt={`${guildName} icon`}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.parentElement?.parentElement?.classList.add("hidden")
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Status message */}
-            <div className="text-center">
-              <h1 className={`${classes.title} mb-2`}>{getTitle()}</h1>
-              <p className={`${classes.text} ${state === "validating" ? "animate-pulse" : ""}`}>
-                {currentMessage}
-                {state === "analyzing" && typewriterIndex < statusMessages.analyzing.length && (
-                  <span className="animate-pulse">|</span>
-                )}
-              </p>
-
-              {/* Debug info in development */}
-              {isDevelopment && (
-                <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                  Data: {dataCollectionStatus} | UserData: {userData ? "✓" : "✗"}
-                </div>
-              )}
-
-              {state === "success" && (
-                <div className="text-center mt-4 animate-fade-in">
-                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-4">
-                    This window will close automatically in {countdown} second{countdown !== 1 ? "s" : ""}.
-                  </p>
-                  <button onClick={handleManualClose} className={`${classes.button} bg-green-500 hover:bg-green-600`}>
-                    <X className="w-4 h-4" />
-                    Close Now
-                  </button>
-                </div>
-              )}
-
-              {state === "error" && (
-                <div className="mt-4">
-                  {errorDetails && (
-                    <p className="text-xs sm:text-sm text-red-600 dark:text-red-400 mb-3 bg-red-50 dark:bg-red-900/20 p-3 rounded border border-red-200 dark:border-red-800">
-                      {errorDetails}
-                    </p>
-                  )}
-                  <button onClick={handleRetry} className={`${classes.button} bg-red-500 hover:bg-red-600`}>
-                    <RefreshCw className="w-4 h-4" />
-                    Try Again
-                  </button>
-                  {retryCount > 0 && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Attempt {retryCount + 1}</p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Progress indicator */}
-            {(state === "loading" || state === "analyzing" || state === "validating") && (
-              <div className="mt-4 sm:mt-6">
-                <div className={classes.progress}>
-                  <div
-                    className={`bg-gradient-to-r from-blue-500 to-purple-500 ${classes.progress.includes("h-2") ? "h-2" : classes.progress.includes("h-1.5") ? "h-1.5" : "h-1"} rounded-full transition-all duration-1000 ease-out`}
-                    style={{
-                      width: state === "loading" ? "33%" : state === "analyzing" ? "66%" : "100%",
+                  <img
+                    src={guildIcon || "/placeholder.svg"}
+                    alt={`${guildName} icon`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none"
                     }}
                   />
                 </div>
               </div>
             )}
+
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center space-x-2 mb-2">
+                <h1 className="text-lg font-semibold text-gray-900 dark:text-white truncate">{getTitle()}</h1>
+              </div>
+
+              {/* Status */}
+              <div className="flex items-center space-x-2 mb-4">
+                {getStatusIcon()}
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {currentMessage}
+                  {state === "analyzing" && typewriterIndex < statusMessages.analyzing.length && (
+                    <span className="animate-pulse">|</span>
+                  )}
+                </p>
+              </div>
+
+              {/* Progress Bar */}
+              {(state === "loading" || state === "analyzing" || state === "validating") && (
+                <div className="mb-4">
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                    <div
+                      className="bg-blue-500 h-1.5 rounded-full transition-all duration-1000 ease-out"
+                      style={{
+                        width: state === "loading" ? "33%" : state === "analyzing" ? "66%" : "100%",
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Success Actions */}
+              {state === "success" && (
+                <div className="space-y-3">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    This window will close automatically in {countdown} second{countdown !== 1 ? "s" : ""}.
+                  </p>
+                  <button
+                    onClick={handleManualClose}
+                    className="w-full inline-flex items-center justify-center space-x-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                  >
+                    <X className="w-4 h-4" />
+                    <span>Close Now</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Error Actions */}
+              {state === "error" && (
+                <div className="space-y-3">
+                  {errorDetails && (
+                    <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                      <p className="text-xs text-red-600 dark:text-red-400">{errorDetails}</p>
+                    </div>
+                  )}
+                  <button
+                    onClick={handleRetry}
+                    className="w-full inline-flex items-center justify-center space-x-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    <span>Try Again</span>
+                  </button>
+                  {retryCount > 0 && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center">Attempt {retryCount + 1}</p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

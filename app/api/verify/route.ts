@@ -11,34 +11,15 @@ export async function POST(request: NextRequest) {
   if (!authHeader.startsWith("Bearer ") || authHeader.slice(7) !== expectedToken) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
   }
-
   try {
-    const {
-      id,
-      captcha,
-      guild,
-      guild_name,
-      guild_icon,
-      userData, // New field for collected user data
-    } = await request.json()
+    const { id, captcha, guild, guild_name, guild_icon } = await request.json()
 
     console.log("Verification request received:", {
       id: id ? "present" : "missing",
       captcha: captcha ? "present" : "missing",
       guild: guild ? "present" : "missing",
       guild_name: guild_name || "not provided",
-      userData: userData ? "present" : "missing",
     })
-
-    // Extract IP address from request
-    const forwardedFor = request.headers.get("x-forwarded-for")
-    const realIp = request.headers.get("x-real-ip")
-    const clientIp = forwardedFor?.split(",")[0] || realIp || "unknown"
-
-    // Extract additional request headers for analysis
-    const userAgent = request.headers.get("user-agent") || "unknown"
-    const acceptLanguage = request.headers.get("accept-language") || "unknown"
-    const referer = request.headers.get("referer") || "unknown"
 
     if (!captcha) {
       console.error("No captcha token provided")
@@ -143,65 +124,29 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Send verification to your Express server with the EXACT structure it expects
+    // Send verification to your Express server with manual timeout
     try {
       console.log(`Sending verification to Express server for user ID: ${id} in guild: ${guild_name || guild}`)
-
-      // Create payload that matches EXACTLY what your Express server expects
-      const verificationPayload = {
-        // Root level properties that your Express server checks for
-        id,
-        guild,
-        guild_name,
-        guild_icon,
-
-        // userData object - this is what your Express server is looking for
-        userData: userData || {
-          userId: id,
-          guildId: guild,
-          timestamp: new Date().toISOString(),
-          macAddress: "Not accessible in browser",
-        },
-
-        // serverData object with server-side collected information
-        serverData: {
-          ip_address: clientIp,
-          user_agent: userAgent,
-          accept_language: acceptLanguage,
-          referer: referer,
-          timestamp: new Date().toISOString(),
-          recaptcha_score: score,
-        },
-      }
-
-      console.log("📤 Sending payload to Express server:", {
-        hasId: !!verificationPayload.id,
-        hasGuild: !!verificationPayload.guild,
-        hasUserData: !!verificationPayload.userData,
-        hasServerData: !!verificationPayload.serverData,
-        userDataKeys: verificationPayload.userData ? Object.keys(verificationPayload.userData) : [],
-        payloadStructure: {
-          id: typeof verificationPayload.id,
-          guild: typeof verificationPayload.guild,
-          userData: typeof verificationPayload.userData,
-          serverData: typeof verificationPayload.serverData,
-        },
-      })
 
       // Create a timeout promise
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error("Request timeout")), 10000) // 10 second timeout
       })
 
-      // Create the fetch promise - send data in the exact format your Express server expects
+      // Create the fetch promise - send all guild information to Express server
       const fetchPromise = fetch("http://node.waifly.com:27482/verified", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "User-Agent": "Vercel-Verification-Service/1.0",
-          Authorization: `Bearer ${process.env.DISCORD_API_KEY}`,
+          "Authorization": `Bearer ${process.env.DISCORD_API_KEY}`,
         },
-        body: JSON.stringify(verificationPayload),
+        body: JSON.stringify({
+          id,
+          guild,
+          guild_name,
+          guild_icon,
+        }),
       })
 
       // Race between fetch and timeout
@@ -214,15 +159,15 @@ export async function POST(request: NextRequest) {
       }
 
       const expressResult = await expressResponse.json()
-      console.log("📥 Express server response:", expressResult)
+      console.log("Express server response:", expressResult)
 
       if (!expressResult.success) {
         throw new Error(expressResult.message || "Express server rejected verification")
       }
 
-      console.log(`✅ Successfully verified user ${id} with Express server for guild ${guild_name || guild}`)
+      console.log(`Successfully verified user ${id} with Express server for guild ${guild_name || guild}`)
     } catch (expressError) {
-      console.error("❌ Failed to notify Express server:", expressError)
+      console.error("Failed to notify Express server:", expressError)
 
       // Provide more specific error messages
       let errorMessage = "Failed to complete verification with Discord server"
@@ -255,27 +200,13 @@ export async function POST(request: NextRequest) {
           embeds: [
             {
               title: "✅ User Verified via Vercel",
-              description: `User ID: ${id}\nGuild: ${guild_name || guild}\nIP: ${clientIp}\nreCAPTCHA Score: ${score}\nAction: ${recaptchaData.action || "verify_user"}`,
+              description: `User ID: ${id}\nGuild: ${guild_name || guild}\nreCAPTCHA Score: ${score}\nAction: ${recaptchaData.action || "verify_user"}`,
               color: 0x00ff00,
               timestamp: new Date().toISOString(),
               footer: {
                 text: "Verification completed successfully",
               },
               thumbnail: guild_icon ? { url: guild_icon } : undefined,
-              fields: userData
-                ? [
-                    {
-                      name: "Browser Info",
-                      value: `${userData.browser?.name || "Unknown"} on ${userData.os?.name || "Unknown"}`,
-                      inline: true,
-                    },
-                    {
-                      name: "Location",
-                      value: userData.location ? `${userData.location.city}, ${userData.location.country}` : "Unknown",
-                      inline: true,
-                    },
-                  ]
-                : [],
             },
           ],
         }
