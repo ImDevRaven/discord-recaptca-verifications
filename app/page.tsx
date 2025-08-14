@@ -412,7 +412,7 @@ export default function VerificationPage() {
 
               {/* Main heading */}
               <h1 className="text-3xl font-bold text-gray-900 mb-3">Verify yourself</h1>
-              <p className="text-gray-600 mb-8">{"You can use our server channels if you\'re\nverified with our security system."}</p>
+              <p className="text-gray-600 mb-8">{"You can use our server channels if you\'re verified with our security system."}</p>
             </div>
 
             {/* Verification status card */}
