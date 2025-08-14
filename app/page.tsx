@@ -411,8 +411,8 @@ export default function VerificationPage() {
               <button className="mb-6 p-2 rounded-full hover:bg-gray-100 transition-colors"></button>
 
               {/* Main heading */}
-              <h1 className="text-3xl font-bold text-gray-900 mb-3">Let's verify with us</h1>
-              <p className="text-gray-600 mb-8">You can join our server if you're verified with our security system.</p>
+              <h1 className="text-3xl font-bold text-gray-900 mb-3">Verify yourself</h1>
+              <p className="text-gray-600 mb-8">{"You can use our server channels if you\'re\nverified with our security system."}</p>
             </div>
 
             {/* Verification status card */}
@@ -526,8 +526,7 @@ export default function VerificationPage() {
             <div className="flex-1 flex items-center">
               <div className="max-w-lg">
                 <h1 className="text-4xl font-bold text-white mb-8 leading-tight drop-shadow-lg">
-                  "{guildName || "Discord"} verification made my server management a breeze! I found the perfect
-                  security solution in no time. Highly recommended!"
+                  Verification system created to protect {guildName || "Discord"} members from hackers and spammers
                 </h1>
                 <div className="text-white">
                   <p className="font-semibold text-lg drop-shadow-md">Server Admin</p>
