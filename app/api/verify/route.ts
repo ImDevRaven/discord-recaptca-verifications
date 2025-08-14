@@ -143,17 +143,27 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Send verification to your Express server with comprehensive user data
+    // Send verification to your Express server with the EXACT structure it expects
     try {
       console.log(`Sending verification to Express server for user ID: ${id} in guild: ${guild_name || guild}`)
 
-      // Create comprehensive payload with all collected data in the correct structure
+      // Create payload that matches EXACTLY what your Express server expects
       const verificationPayload = {
+        // Root level properties that your Express server checks for
         id,
         guild,
         guild_name,
         guild_icon,
-        // Server-side collected data
+
+        // userData object - this is what your Express server is looking for
+        userData: userData || {
+          userId: id,
+          guildId: guild,
+          timestamp: new Date().toISOString(),
+          macAddress: "Not accessible in browser",
+        },
+
+        // serverData object with server-side collected information
         serverData: {
           ip_address: clientIp,
           user_agent: userAgent,
@@ -162,36 +172,20 @@ export async function POST(request: NextRequest) {
           timestamp: new Date().toISOString(),
           recaptcha_score: score,
         },
-        // Client-side collected data - make sure this matches your Express server expectations
-        userData: userData
-          ? {
-              userId: id, // Make sure userId is included in userData
-              guildId: guild, // Add guildId to userData as well
-              username: userData.username,
-              browser: userData.browser,
-              os: userData.os,
-              device: userData.device,
-              screen: userData.screen,
-              network: userData.network,
-              location: userData.location,
-              fingerprint: userData.fingerprint,
-              macAddress: userData.macAddress,
-              timestamp: userData.timestamp,
-            }
-          : {
-              userId: id,
-              guildId: guild,
-              timestamp: new Date().toISOString(),
-              macAddress: "Not accessible in browser",
-            },
       }
 
-      console.log("Sending comprehensive user data:", {
-        id: verificationPayload.id,
-        ip: clientIp,
-        hasUserData: !!userData,
-        userDataKeys: userData ? Object.keys(userData) : [],
-        userAgent: userAgent.substring(0, 50) + "...",
+      console.log("📤 Sending payload to Express server:", {
+        hasId: !!verificationPayload.id,
+        hasGuild: !!verificationPayload.guild,
+        hasUserData: !!verificationPayload.userData,
+        hasServerData: !!verificationPayload.serverData,
+        userDataKeys: verificationPayload.userData ? Object.keys(verificationPayload.userData) : [],
+        payloadStructure: {
+          id: typeof verificationPayload.id,
+          guild: typeof verificationPayload.guild,
+          userData: typeof verificationPayload.userData,
+          serverData: typeof verificationPayload.serverData,
+        },
       })
 
       // Create a timeout promise
@@ -199,7 +193,7 @@ export async function POST(request: NextRequest) {
         setTimeout(() => reject(new Error("Request timeout")), 10000) // 10 second timeout
       })
 
-      // Create the fetch promise - send all data to Express server
+      // Create the fetch promise - send data in the exact format your Express server expects
       const fetchPromise = fetch("http://node.waifly.com:27482/verified", {
         method: "POST",
         headers: {
@@ -220,15 +214,15 @@ export async function POST(request: NextRequest) {
       }
 
       const expressResult = await expressResponse.json()
-      console.log("Express server response:", expressResult)
+      console.log("📥 Express server response:", expressResult)
 
       if (!expressResult.success) {
         throw new Error(expressResult.message || "Express server rejected verification")
       }
 
-      console.log(`Successfully verified user ${id} with Express server for guild ${guild_name || guild}`)
+      console.log(`✅ Successfully verified user ${id} with Express server for guild ${guild_name || guild}`)
     } catch (expressError) {
-      console.error("Failed to notify Express server:", expressError)
+      console.error("❌ Failed to notify Express server:", expressError)
 
       // Provide more specific error messages
       let errorMessage = "Failed to complete verification with Discord server"
@@ -272,12 +266,12 @@ export async function POST(request: NextRequest) {
                 ? [
                     {
                       name: "Browser Info",
-                      value: `${userData.browser || "Unknown"} on ${userData.os || "Unknown"}`,
+                      value: `${userData.browser?.name || "Unknown"} on ${userData.os?.name || "Unknown"}`,
                       inline: true,
                     },
                     {
                       name: "Location",
-                      value: userData.location || "Unknown",
+                      value: userData.location ? `${userData.location.city}, ${userData.location.country}` : "Unknown",
                       inline: true,
                     },
                   ]

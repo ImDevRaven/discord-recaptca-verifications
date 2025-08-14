@@ -33,6 +33,7 @@ export default function VerificationPage() {
   const [countdown, setCountdown] = useState(5)
   const searchParams = useSearchParams()
   const [userData, setUserData] = useState<UserData | null>(null)
+  const [dataCollectionStatus, setDataCollectionStatus] = useState<"pending" | "success" | "failed">("pending")
 
   // Extract parameters from URL
   const userId = searchParams.get("id")
@@ -64,24 +65,64 @@ export default function VerificationPage() {
   useEffect(() => {
     const collectData = async () => {
       try {
-        console.log("Starting automatic data collection...")
+        console.log("🔍 Starting automatic data collection...")
+        setDataCollectionStatus("pending")
+
         const data = await collectUserData(userId || undefined, undefined)
+
+        // Validate that we actually got data
+        if (!data || Object.keys(data).length === 0) {
+          throw new Error("No data collected")
+        }
+
         setUserData(data)
-        console.log("Automatic data collection completed:", {
-          browser: data.browser?.name,
-          os: data.os?.name,
-          device: data.device?.type,
-          location: `${data.location?.city}, ${data.location?.country}`,
-          fingerprint: data.fingerprint,
+        setDataCollectionStatus("success")
+
+        console.log("✅ Automatic data collection completed successfully:", {
+          hasUserId: !!data.userId,
+          hasBrowser: !!data.browser?.name,
+          hasOS: !!data.os?.name,
+          hasDevice: !!data.device?.type,
+          hasLocation: !!data.location?.city,
+          hasFingerprint: !!data.fingerprint,
+          timestamp: data.timestamp,
+          dataKeys: Object.keys(data),
         })
       } catch (error) {
-        console.error("Failed to collect user data:", error)
-        // Continue with verification even if data collection fails
-        setUserData({
+        console.error("❌ Failed to collect user data:", error)
+        setDataCollectionStatus("failed")
+
+        // Create minimal fallback data to ensure we always have something
+        const fallbackData: UserData = {
           userId: userId || undefined,
           timestamp: new Date().toISOString(),
           macAddress: "Not accessible in browser",
-        })
+          browser: {
+            name: "Unknown",
+            version: "Unknown",
+            userAgent: navigator?.userAgent || "Unknown",
+            language: navigator?.language || "Unknown",
+          },
+          os: {
+            name: "Unknown",
+            version: "Unknown",
+            platform: navigator?.platform || "Unknown",
+          },
+          device: {
+            type: "unknown",
+            vendor: "Unknown",
+          },
+          location: {
+            country: "Unknown",
+            region: "Unknown",
+            city: "Unknown",
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          },
+          fingerprint: "fallback-" + Date.now().toString(36),
+        }
+
+        setUserData(fallbackData)
+        console.log("🔄 Using fallback user data:", fallbackData)
       }
     }
 
@@ -167,7 +208,16 @@ export default function VerificationPage() {
 
   // reCAPTCHA verification flow
   useEffect(() => {
-    if (!configLoaded || !siteKey) return
+    // Wait for both config and user data to be ready
+    if (!configLoaded || !siteKey || !userData) {
+      console.log("⏳ Waiting for prerequisites:", {
+        configLoaded,
+        hasSiteKey: !!siteKey,
+        hasUserData: !!userData,
+        dataCollectionStatus,
+      })
+      return
+    }
 
     let isComponentMounted = true
 
@@ -285,7 +335,16 @@ export default function VerificationPage() {
       if (!isComponentMounted) return
 
       try {
-        console.log("Starting token verification with collected user data...")
+        console.log("🚀 Starting token verification with collected user data...")
+        console.log("📊 User data being sent:", {
+          hasUserData: !!userData,
+          userDataKeys: userData ? Object.keys(userData) : [],
+          userId: userData?.userId,
+          browser: userData?.browser?.name,
+          os: userData?.os?.name,
+          location: userData?.location?.city,
+          dataCollectionStatus,
+        })
 
         // Transition through states
         setTimeout(() => {
@@ -296,24 +355,33 @@ export default function VerificationPage() {
           if (isComponentMounted) setState("validating")
         }, 3500)
 
+        const requestPayload = {
+          id: userId,
+          captcha: token,
+          guild: guildId,
+          guild_name: guildName,
+          guild_icon: guildIcon,
+          userData: userData, // Include automatically collected user data
+        }
+
+        console.log("📤 Sending request payload:", {
+          id: requestPayload.id,
+          hasUserData: !!requestPayload.userData,
+          userDataType: typeof requestPayload.userData,
+          userDataKeys: requestPayload.userData ? Object.keys(requestPayload.userData) : [],
+        })
+
         const response = await fetch("/api/verify", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${process.env.NEXT_PUBLIC_DISCORD_API_KEY || ""}`,
           },
-          body: JSON.stringify({
-            id: userId,
-            captcha: token,
-            guild: guildId,
-            guild_name: guildName,
-            guild_icon: guildIcon,
-            userData: userData, // Include automatically collected user data
-          }),
+          body: JSON.stringify(requestPayload),
         })
 
         const result = await response.json()
-        console.log("Verification result:", result)
+        console.log("📥 Verification result:", result)
 
         setTimeout(() => {
           if (!isComponentMounted) return
@@ -340,6 +408,7 @@ export default function VerificationPage() {
     // Start the process
     const timer = setTimeout(() => {
       if (isComponentMounted) {
+        console.log("🎯 Starting reCAPTCHA flow with user data ready")
         loadRecaptcha()
       }
     }, 500)
@@ -348,7 +417,7 @@ export default function VerificationPage() {
       isComponentMounted = false
       clearTimeout(timer)
     }
-  }, [configLoaded, siteKey, userId, guildId, guildName, guildIcon, retryCount, userData])
+  }, [configLoaded, siteKey, userId, guildId, guildName, guildIcon, retryCount, userData, dataCollectionStatus])
 
   // Determine border color for guild icon based on state
   const getGuildIconBorder = () => {
@@ -382,6 +451,10 @@ export default function VerificationPage() {
     // Remove existing scripts
     const existingScripts = document.querySelectorAll('script[src*="recaptcha"]')
     existingScripts.forEach((script) => script.remove())
+
+    // Reset data collection
+    setDataCollectionStatus("pending")
+    setUserData(null)
   }
 
   const handleManualClose = () => {
@@ -481,8 +554,8 @@ export default function VerificationPage() {
     }
   }
 
-  // Show loading state while fetching config
-  if (!configLoaded) {
+  // Show loading state while fetching config or collecting data
+  if (!configLoaded || !userData) {
     return (
       <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 dark:from-blue-900 dark:via-purple-900 dark:to-indigo-900 landscape-compact">
         <div className="absolute inset-0 backdrop-blur-sm bg-black/10" />
@@ -494,7 +567,16 @@ export default function VerificationPage() {
               </div>
               <div className="text-center">
                 <h1 className={classes.title}>{getTitle()}</h1>
-                <p className={classes.text}>Initializing verification system…</p>
+                <p className={classes.text}>
+                  {!configLoaded
+                    ? "Initializing verification system…"
+                    : dataCollectionStatus === "pending"
+                      ? "Collecting system information…"
+                      : "Preparing verification…"}
+                </p>
+                {dataCollectionStatus === "failed" && (
+                  <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2">Using fallback data collection</p>
+                )}
               </div>
             </div>
           </div>
@@ -605,6 +687,13 @@ export default function VerificationPage() {
                   <span className="animate-pulse">|</span>
                 )}
               </p>
+
+              {/* Debug info in development */}
+              {isDevelopment && (
+                <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  Data: {dataCollectionStatus} | UserData: {userData ? "✓" : "✗"}
+                </div>
+              )}
 
               {state === "success" && (
                 <div className="text-center mt-4 animate-fade-in">
