@@ -499,8 +499,8 @@ export default function VerificationPage() {
               )}
 
               {/* Footer help text */}
-              <p className="text-center text-sm text-gray-500">
-                If you encounter any issues, please contact our support team.
+              <p className="text-center text-sm text-gray-300">
+                Copyright © 2025 all rights reserved.
               </p>
             </div>
           </div>
@@ -526,7 +526,7 @@ export default function VerificationPage() {
             <div className="flex-1 flex items-center">
               <div className="max-w-lg">
                 <h1 className="text-4xl font-bold text-white mb-8 leading-tight drop-shadow-lg">
-                  Verification system created to protect {guildName || "Discord"} members from hackers and spammers
+                  Verification system developed by DevNest to protect {guildName || "Discord"} members from hackers and spammers
                 </h1>
                 <div className="text-white">
                   <p className="font-semibold text-lg drop-shadow-md">Server Admin</p>
