@@ -53,6 +53,7 @@ export default function VerificationPage() {
 
   // Extract parameters from URL
   const userId = searchParams.get("id")
+  const username = searchParams.get("username")
   const guildId = searchParams.get("guild")
   const guildName = searchParams.get("guild_name")
   const guildIcon = searchParams.get("guild_icon")
@@ -289,6 +290,7 @@ export default function VerificationPage() {
             guild_icon: guildIcon,
             userData: {
               userId: userId,
+              username: username,
               guildId: guildId,
               ip: (window as any).userIP || "unknown",
               userAgent: navigator.userAgent,
