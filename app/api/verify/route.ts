@@ -12,13 +12,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
   }
   try {
-    const { id, captcha, guild, guild_name, guild_icon } = await request.json()
+    const { id, captcha, guild, guild_name, guild_icon, user_ip } = await request.json()
 
     console.log("Verification request received:", {
       id: id ? "present" : "missing",
       captcha: captcha ? "present" : "missing",
       guild: guild ? "present" : "missing",
       guild_name: guild_name || "not provided",
+      user_ip: user_ip || "not provided",
     })
 
     if (!captcha) {
@@ -139,13 +140,14 @@ export async function POST(request: NextRequest) {
         headers: {
           "Content-Type": "application/json",
           "User-Agent": "Vercel-Verification-Service/1.0",
-          "Authorization": `Bearer ${process.env.DISCORD_API_KEY}`,
+          Authorization: `Bearer ${process.env.DISCORD_API_KEY}`,
         },
         body: JSON.stringify({
           id,
           guild,
           guild_name,
           guild_icon,
+          user_ip,
         }),
       })
 
@@ -200,7 +202,7 @@ export async function POST(request: NextRequest) {
           embeds: [
             {
               title: "✅ User Verified via Vercel",
-              description: `User ID: ${id}\nGuild: ${guild_name || guild}\nreCAPTCHA Score: ${score}\nAction: ${recaptchaData.action || "verify_user"}`,
+              description: `User ID: ${id}\nGuild: ${guild_name || guild}\nUser IP: ${user_ip || "unknown"}\nreCAPTCHA Score: ${score}\nAction: ${recaptchaData.action || "verify_user"}`,
               color: 0x00ff00,
               timestamp: new Date().toISOString(),
               footer: {
@@ -232,6 +234,7 @@ export async function POST(request: NextRequest) {
       hostname: recaptchaData.hostname,
       message: "Verification completed successfully",
       guild_name: guild_name,
+      user_ip: user_ip,
     })
   } catch (error) {
     console.error("Verification error:", error)
