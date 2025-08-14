@@ -339,11 +339,11 @@ export default function VerificationPage() {
   // Show loading state while fetching config
   if (!configLoaded) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
         <div className="w-full max-w-md">
-          <div className="bg-white rounded-3xl shadow-xl p-8">
+          <div className="p-8">
             <div className="flex justify-center mb-6">
-              <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent animate-spin" />
             </div>
             <div className="text-center">
               <h1 className="text-2xl font-bold text-gray-900 mb-2">{getTitle()}</h1>
@@ -356,10 +356,10 @@ export default function VerificationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6 flex items-center justify-center">
-      <div className="w-full max-w-6xl bg-white rounded-3xl shadow-2xl overflow-hidden flex">
+    <div className="min-h-screen bg-gray-100 flex">
+      <div className="w-full flex">
         {/* Left side - Verification form */}
-        <div className="w-full lg:w-2/5 p-8 lg:p-12 flex flex-col justify-center">
+        <div className="w-full lg:w-[35%] p-8 lg:p-12 flex flex-col justify-center bg-white">
           {/* All the existing verification UI content stays the same */}
           <div
             className={`transform transition-all duration-1000 ease-out ${
@@ -395,7 +395,7 @@ export default function VerificationPage() {
 
               {/* Back arrow */}
               <button className="mb-6 p-2 rounded-full hover:bg-gray-100 transition-colors">
-                <ChevronLeft className="w-5 h-5 text-gray-400" />
+                <ChevronLeft className="w-5 h-5" />
               </button>
 
               {/* Main heading */}
@@ -487,15 +487,15 @@ export default function VerificationPage() {
               )}
 
               {/* Footer help text */}
-              <div className="text-center pt-4">
-                <p className="text-sm text-gray-500">Need help?</p>
-              </div>
+              <p className="text-center text-sm text-gray-500">
+                If you encounter any issues, please contact our support team.
+              </p>
             </div>
           </div>
         </div>
 
         {/* Right side - Image from screenshot */}
-        <div className="hidden lg:block lg:w-3/5 relative">
+        <div className="hidden lg:block lg:w-[65%] relative">
           <div
             className="w-full h-full bg-cover bg-center bg-no-repeat"
             style={{
