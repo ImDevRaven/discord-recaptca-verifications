@@ -12,13 +12,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
   }
   try {
-    const { id, captcha, guild, guild_name, guild_icon, user_ip } = await request.json()
+    const { id, captcha, guild, guild_name, guild_icon, userData } = await request.json()
+    const user_ip = userData?.ip || "unknown"
 
     console.log("Verification request received:", {
       id: id ? "present" : "missing",
       captcha: captcha ? "present" : "missing",
       guild: guild ? "present" : "missing",
       guild_name: guild_name || "not provided",
+      userData: userData ? "present" : "missing",
       user_ip: user_ip || "not provided",
     })
 
@@ -147,7 +149,8 @@ export async function POST(request: NextRequest) {
           guild,
           guild_name,
           guild_icon,
-          user_ip,
+          userData,
+          user_ip, // Add this for backward compatibility
         }),
       })
 
@@ -202,7 +205,7 @@ export async function POST(request: NextRequest) {
           embeds: [
             {
               title: "✅ User Verified via Vercel",
-              description: `User ID: ${id}\nGuild: ${guild_name || guild}\nUser IP: ${user_ip || "unknown"}\nreCAPTCHA Score: ${score}\nAction: ${recaptchaData.action || "verify_user"}`,
+              description: `User ID: ${id}\nGuild: ${guild_name || guild}\nUser IP: ${user_ip}\nreCAPTCHA Score: ${score}\nAction: ${recaptchaData.action || "verify_user"}`,
               color: 0x00ff00,
               timestamp: new Date().toISOString(),
               footer: {
